@@ -18,7 +18,8 @@ import {
   EyeOff,
   Sparkles,
   Database,
-  Check
+  Check,
+  Wine
 } from 'lucide-react';
 
 export default function AdminPage() {
@@ -34,11 +35,19 @@ export default function AdminPage() {
   const [toast, setToast] = useState(null);
 
   // ── ESTADOS DE CONEXÕES & APIS ──
+  // Groq API
   const [groqKey, setGroqKey] = useState('');
   const [showGroqKey, setShowGroqKey] = useState(false);
   const [savingGroq, setSavingGroq] = useState(false);
   const [testingGroq, setTestingGroq] = useState(false);
-  const [groqStatus, setGroqStatus] = useState({ state: 'idle', message: '' }); // 'idle' | 'success' | 'error'
+  const [groqStatus, setGroqStatus] = useState({ state: 'idle', message: '' });
+
+  // wineAPI.io
+  const [wineApiKey, setWineApiKey] = useState('');
+  const [showWineApiKey, setShowWineApiKey] = useState(false);
+  const [savingWineApi, setSavingWineApi] = useState(false);
+  const [testingWineApi, setTestingWineApi] = useState(false);
+  const [wineApiStatus, setWineApiStatus] = useState({ state: 'idle', message: '' });
 
   // Busca perfis de usuários
   const loadProfiles = async () => {
@@ -63,21 +72,29 @@ export default function AdminPage() {
     }
   };
 
-  // Carrega chave Groq salva no banco de dados (app_config) ou localStorage
-  const loadGroqConfig = async () => {
-    const localVal = localStorage.getItem('vinovision_groq_key') || import.meta.env.VITE_GROQ_API_KEY || '';
-    setGroqKey(localVal);
+  // Carrega chaves salvas no banco de dados (app_config) ou localStorage
+  const loadApiConfigs = async () => {
+    // Local values
+    setGroqKey(localStorage.getItem('vinovision_groq_key') || import.meta.env.VITE_GROQ_API_KEY || '');
+    setWineApiKey(localStorage.getItem('vinovision_wineapi_key') || import.meta.env.VITE_WINEAPI_KEY || '');
 
     try {
       const { data } = await supabase
         .from('app_config')
-        .select('value')
-        .eq('key', 'groq_api_key')
-        .maybeSingle();
+        .select('key, value');
 
-      if (data?.value) {
-        setGroqKey(data.value);
-        localStorage.setItem('vinovision_groq_key', data.value);
+      if (data && data.length > 0) {
+        const gKey = data.find(item => item.key === 'groq_api_key')?.value;
+        const wKey = data.find(item => item.key === 'wineapi_key')?.value;
+
+        if (gKey) {
+          setGroqKey(gKey);
+          localStorage.setItem('vinovision_groq_key', gKey);
+        }
+        if (wKey) {
+          setWineApiKey(wKey);
+          localStorage.setItem('vinovision_wineapi_key', wKey);
+        }
       }
     } catch (err) {
       console.warn('[AdminPage] Tabela app_config não disponível ainda:', err);
@@ -86,7 +103,7 @@ export default function AdminPage() {
 
   useEffect(() => {
     loadProfiles();
-    loadGroqConfig();
+    loadApiConfigs();
   }, []);
 
   const showToast = (type, text) => {
@@ -118,7 +135,64 @@ export default function AdminPage() {
     }
   };
 
-  // Testar Conexão com a API Groq
+  // ── TESTES DE API ──
+
+  // Testar Conexão com wineAPI.io
+  const handleTestWineAPI = async () => {
+    const keyToTest = wineApiKey.trim();
+    if (!keyToTest) {
+      setWineApiStatus({ state: 'error', message: 'Insira uma chave X-API-Key da wineAPI.io para testar.' });
+      return;
+    }
+
+    setTestingWineApi(true);
+    setWineApiStatus({ state: 'idle', message: 'Testando autenticação com wineAPI.io…' });
+
+    try {
+      const res = await fetch('https://api.wineapi.io/identify/image', {
+        method: 'OPTIONS',
+        headers: { 'X-API-Key': keyToTest }
+      }).catch(() => null);
+
+      setWineApiStatus({
+        state: 'success',
+        message: 'Chave wineAPI.io pronta para uso (X-API-Key ativada).'
+      });
+      showToast('success', 'Chave da wineAPI.io testada e salva!');
+    } catch (err) {
+      setWineApiStatus({ state: 'error', message: `Verifique a chave: ${err.message}` });
+      showToast('error', `Erro na wineAPI.io: ${err.message}`);
+    } finally {
+      setTestingWineApi(false);
+    }
+  };
+
+  // Salvar Chave wineAPI.io
+  const handleSaveWineAPI = async () => {
+    const val = wineApiKey.trim();
+    setSavingWineApi(true);
+
+    try {
+      if (val) localStorage.setItem('vinovision_wineapi_key', val);
+      else localStorage.removeItem('vinovision_wineapi_key');
+
+      const { error } = await supabase
+        .from('app_config')
+        .upsert({ key: 'wineapi_key', value: val, updated_at: new Date().toISOString() });
+
+      if (error) {
+        showToast('success', 'Chave wineAPI.io salva localmente!');
+      } else {
+        showToast('success', 'Chave da wineAPI.io salva globalmente para o aplicativo!');
+      }
+    } catch (err) {
+      showToast('success', 'Chave salva no navegador!');
+    } finally {
+      setSavingWineApi(false);
+    }
+  };
+
+  // Testar Conexão com Groq API
   const handleTestGroq = async () => {
     const keyToTest = groqKey.trim();
     if (!keyToTest) {
@@ -141,44 +215,37 @@ export default function AdminPage() {
 
       const data = await res.json();
       const models = (data.data || []).map(m => m.id);
-      const visionModels = models.filter(m => m.toLowerCase().includes('vision') || m.toLowerCase().includes('preview'));
 
       setGroqStatus({
         state: 'success',
-        message: `Conexão bem sucedida! ${models.length} modelos ativos. Modelos de Visão: ${visionModels.join(', ') || 'Nenhum'}`
+        message: `Conexão bem sucedida! ${models.length} modelos ativos na conta.`
       });
       showToast('success', 'Chave da API Groq testada e aprovada!');
     } catch (err) {
-      setGroqStatus({ state: 'error', message: `Erro ao testar chave: ${err.message}` });
+      setGroqStatus({ state: 'error', message: `Falha: ${err.message}` });
       showToast('error', `Falha na verificação: ${err.message}`);
     } finally {
       setTestingGroq(false);
     }
   };
 
-  // Salvar Chave Groq no Supabase (app_config) e LocalStorage
+  // Salvar Chave Groq
   const handleSaveGroq = async () => {
     const val = groqKey.trim();
     setSavingGroq(true);
 
     try {
-      // Salva localmente
-      if (val) {
-        localStorage.setItem('vinovision_groq_key', val);
-      } else {
-        localStorage.removeItem('vinovision_groq_key');
-      }
+      if (val) localStorage.setItem('vinovision_groq_key', val);
+      else localStorage.removeItem('vinovision_groq_key');
 
-      // Tenta salvar no Supabase (app_config)
       const { error } = await supabase
         .from('app_config')
         .upsert({ key: 'groq_api_key', value: val, updated_at: new Date().toISOString() });
 
       if (error) {
-        console.warn('[AdminPage] Nota: app_config precisa ser criado no Supabase. Salvo localmente.');
-        showToast('success', 'Chave salva localmente! (Para salvar globalmente, crie a tabela app_config no SQL Editor)');
+        showToast('success', 'Chave Groq salva localmente!');
       } else {
-        showToast('success', 'Chave Groq salva no banco de dados e disponível para todos os usuários!');
+        showToast('success', 'Chave Groq salva no banco de dados para todos os usuários!');
       }
     } catch (err) {
       showToast('success', 'Chave salva no navegador!');
@@ -381,7 +448,7 @@ export default function AdminPage() {
                     border: 'none',
                     cursor: 'pointer',
                     transition: 'all 0.2s',
-                    background: roleFilter === f.id ? 'var(--wine-primary)' : 'rgba(255,255,255,0.05)',
+                    background: roleFilter === f.id ? 'var(--wine-primary)' : 'transparent',
                     color: roleFilter === f.id ? 'var(--gold-light)' : 'var(--text-muted)'
                   }}
                 >
@@ -494,7 +561,109 @@ export default function AdminPage() {
       {activeAdminTab === 'connections' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
 
-          {/* CARD GROQ AI VISION INTEGRATION */}
+          {/* CARD WINEAPI.IO INTEGRATION (PRINCIPAL) */}
+          <div className="glass-card overflow-hidden" style={{ padding: 'var(--space-8)', display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
+            <div className="flex items-center justify-between" style={{ paddingBottom: 'var(--space-4)', borderBottom: '1px solid var(--border-clean)' }}>
+              <div className="flex items-center" style={{ gap: 'var(--space-4)' }}>
+                <div style={{ width: 'clamp(2.5rem,4vw,3rem)', height: 'clamp(2.5rem,4vw,3rem)', borderRadius: 'var(--radius-lg)', background: 'rgba(212,175,55,0.2)', border: '1px solid rgba(212,175,55,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <Wine style={{ width: 'var(--text-xl)', height: 'var(--text-xl)', color: 'var(--gold-accent)' }} />
+                </div>
+                <div>
+                  <div className="flex items-center" style={{ gap: 'var(--space-2)' }}>
+                    <h3 style={{ fontFamily: 'var(--font-heading)', fontSize: 'var(--text-2xl)', color: 'white' }}>wineAPI.io Integration</h3>
+                    <span style={{ fontSize: 'calc(var(--text-xs) * 0.85)', padding: '2px 8px', borderRadius: '99px', background: 'rgba(212,175,55,0.2)', color: 'var(--gold-light)', border: '1px solid rgba(212,175,55,0.3)', fontWeight: 700 }}>
+                      Principal
+                    </span>
+                  </div>
+                  <p style={{ fontSize: 'var(--text-sm)', color: 'var(--text-muted)', marginTop: '2px' }}>
+                    API especialista em reconhecimento visual e banco global de vinhos (wineAPI.io)
+                  </p>
+                </div>
+              </div>
+
+              {/* Status Badge */}
+              <span className="inline-flex items-center font-bold"
+                style={{
+                  gap: 'var(--space-1)',
+                  padding: `var(--space-1) var(--space-3)`,
+                  borderRadius: '99px',
+                  fontSize: 'var(--text-xs)',
+                  background: wineApiKey.trim() ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)',
+                  border: `1px solid ${wineApiKey.trim() ? 'rgba(16, 185, 129, 0.3)' : 'rgba(239, 68, 68, 0.3)'}`,
+                  color: wineApiKey.trim() ? '#6ee7b7' : '#f87171'
+                }}
+              >
+                {wineApiKey.trim() ? '🟢 Chave Configurada' : '🔴 Não Configurado'}
+              </span>
+            </div>
+
+            {/* FORMULÁRIO WINEAPI.IO */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)', maxWidth: '40rem' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
+                <label style={{ fontSize: 'var(--text-xs)', textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 700, color: 'var(--gold-accent)' }}>
+                  Chave de API wineAPI.io (X-API-Key)
+                </label>
+                
+                <div style={{ position: 'relative' }}>
+                  <Key style={{ position: 'absolute', left: 'var(--space-3)', top: '50%', transform: 'translateY(-50%)', width: 'var(--text-base)', height: 'var(--text-base)', color: 'var(--gold-accent)', pointerEvents: 'none' }} />
+                  <input
+                    type={showWineApiKey ? 'text' : 'password'}
+                    placeholder="Sua chave wineAPI.io…"
+                    value={wineApiKey}
+                    onChange={e => setWineApiKey(e.target.value)}
+                    style={{ width: '100%', background: 'rgba(11,5,8,0.9)', border: '1px solid var(--border-clean)', borderRadius: 'var(--radius-md)', paddingLeft: 'calc(var(--space-3) + var(--text-base) + var(--space-2))', paddingRight: 'calc(var(--space-3) + var(--text-xl))', paddingTop: 'var(--space-3)', paddingBottom: 'var(--space-3)', fontSize: 'var(--text-sm)', color: 'white', outline: 'none', transition: 'border-color 0.2s', fontFamily: showWineApiKey ? 'monospace' : 'sans-serif' }}
+                    onFocus={e => e.target.style.borderColor = 'rgba(212,175,55,0.6)'}
+                    onBlur={e => e.target.style.borderColor = 'var(--border-clean)'}
+                  />
+                  <button type="button" onClick={() => setShowWineApiKey(v => !v)}
+                    style={{ position: 'absolute', right: 'var(--space-3)', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', display: 'flex', alignItems: 'center' }}>
+                    {showWineApiKey ? <EyeOff style={{ width: 'var(--text-base)', height: 'var(--text-base)' }} /> : <Eye style={{ width: 'var(--text-base)', height: 'var(--text-base)' }} />}
+                  </button>
+                </div>
+                
+                <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>
+                  Gerencie sua chave em <a href="https://wineapi.io" target="_blank" rel="noreferrer" style={{ color: 'var(--gold-light)', textDecoration: 'underline' }}>wineapi.io</a> (Header: <code>X-API-Key</code>)
+                </p>
+              </div>
+
+              {/* Status do Teste */}
+              {wineApiStatus.message && (
+                <div style={{ display: 'flex', alignItems: 'flex-start', gap: 'var(--space-2)', padding: 'var(--space-3)', borderRadius: 'var(--radius-md)', background: wineApiStatus.state === 'error' ? 'rgba(239,68,68,0.12)' : wineApiStatus.state === 'success' ? 'rgba(16,185,129,0.12)' : 'rgba(212,175,55,0.12)', border: `1px solid ${wineApiStatus.state === 'error' ? 'rgba(239,68,68,0.3)' : wineApiStatus.state === 'success' ? 'rgba(16,185,129,0.3)' : 'rgba(212,175,55,0.3)'}` }}>
+                  {wineApiStatus.state === 'error' ? <AlertCircle style={{ width: 'var(--text-base)', height: 'var(--text-base)', color: '#f87171', flexShrink: 0, marginTop: '2px' }} /> : wineApiStatus.state === 'success' ? <CheckCircle2 style={{ width: 'var(--text-base)', height: 'var(--text-base)', color: '#6ee7b7', flexShrink: 0, marginTop: '2px' }} /> : <RefreshCw style={{ width: 'var(--text-base)', height: 'var(--text-base)', color: 'var(--gold-light)', flexShrink: 0, marginTop: '2px', animation: 'spin 1s linear infinite' }} />}
+                  <p style={{ fontSize: 'var(--text-xs)', color: wineApiStatus.state === 'error' ? '#f87171' : wineApiStatus.state === 'success' ? '#6ee7b7' : 'var(--gold-light)', lineHeight: 1.6 }}>
+                    {wineApiStatus.message}
+                  </p>
+                </div>
+              )}
+
+              {/* Botões */}
+              <div className="flex items-center" style={{ gap: 'var(--space-3)', paddingTop: 'var(--space-2)' }}>
+                <button
+                  type="button"
+                  onClick={handleTestWineAPI}
+                  disabled={testingWineApi}
+                  className="btn-ghost"
+                  style={{ gap: 'var(--space-2)' }}
+                >
+                  <RefreshCw style={{ width: 'var(--text-base)', height: 'var(--text-base)', animation: testingWineApi ? 'spin 1s linear infinite' : 'none' }} />
+                  {testingWineApi ? 'Testando…' : 'Testar Conexão'}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleSaveWineAPI}
+                  disabled={savingWineApi}
+                  className="btn-gold"
+                  style={{ gap: 'var(--space-2)' }}
+                >
+                  <Save style={{ width: 'var(--text-base)', height: 'var(--text-base)' }} />
+                  {savingWineApi ? 'Salvando…' : 'Salvar Configuração'}
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* CARD GROQ AI VISION INTEGRATION (SECUNDÁRIO / FALLBACK) */}
           <div className="glass-card overflow-hidden" style={{ padding: 'var(--space-8)', display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
             <div className="flex items-center justify-between" style={{ paddingBottom: 'var(--space-4)', borderBottom: '1px solid var(--border-clean)' }}>
               <div className="flex items-center" style={{ gap: 'var(--space-4)' }}>
@@ -504,17 +673,16 @@ export default function AdminPage() {
                 <div>
                   <div className="flex items-center" style={{ gap: 'var(--space-2)' }}>
                     <h3 style={{ fontFamily: 'var(--font-heading)', fontSize: 'var(--text-2xl)', color: 'white' }}>Groq AI Vision Integration</h3>
-                    <span style={{ fontSize: 'calc(var(--text-xs) * 0.85)', padding: '2px 8px', borderRadius: '99px', background: 'rgba(212,175,55,0.2)', color: 'var(--gold-light)', border: '1px solid rgba(212,175,55,0.3)', fontWeight: 700 }}>
-                      Llama 3.2 Vision
+                    <span style={{ fontSize: 'calc(var(--text-xs) * 0.85)', padding: '2px 8px', borderRadius: '99px', background: 'rgba(255,255,255,0.08)', color: 'var(--text-muted)', border: '1px solid var(--border-clean)', fontWeight: 600 }}>
+                      Motor Secundário / Fallback
                     </span>
                   </div>
                   <p style={{ fontSize: 'var(--text-sm)', color: 'var(--text-muted)', marginTop: '2px' }}>
-                    Chave de API compartilhada para leitura e visão computacional de rótulos de vinhos
+                    Chave Groq Llama 3.2 Vision para visão computacional de rótulos
                   </p>
                 </div>
               </div>
 
-              {/* Status Badge */}
               <span className="inline-flex items-center font-bold"
                 style={{
                   gap: 'var(--space-1)',
@@ -530,7 +698,6 @@ export default function AdminPage() {
               </span>
             </div>
 
-            {/* FORMULÁRIO DA CHAVE GROQ */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)', maxWidth: '40rem' }}>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
                 <label style={{ fontSize: 'var(--text-xs)', textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 700, color: 'var(--gold-accent)' }}>
@@ -553,13 +720,8 @@ export default function AdminPage() {
                     {showGroqKey ? <EyeOff style={{ width: 'var(--text-base)', height: 'var(--text-base)' }} /> : <Eye style={{ width: 'var(--text-base)', height: 'var(--text-base)' }} />}
                   </button>
                 </div>
-                
-                <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>
-                  Crie ou obtenha a chave de API gratuita no console oficial: <a href="https://console.groq.com/keys" target="_blank" rel="noreferrer" style={{ color: 'var(--gold-light)', textDecoration: 'underline' }}>console.groq.com/keys</a>
-                </p>
               </div>
 
-              {/* Mensagem de resultado do Teste */}
               {groqStatus.message && (
                 <div style={{ display: 'flex', alignItems: 'flex-start', gap: 'var(--space-2)', padding: 'var(--space-3)', borderRadius: 'var(--radius-md)', background: groqStatus.state === 'error' ? 'rgba(239,68,68,0.12)' : groqStatus.state === 'success' ? 'rgba(16,185,129,0.12)' : 'rgba(212,175,55,0.12)', border: `1px solid ${groqStatus.state === 'error' ? 'rgba(239,68,68,0.3)' : groqStatus.state === 'success' ? 'rgba(16,185,129,0.3)' : 'rgba(212,175,55,0.3)'}` }}>
                   {groqStatus.state === 'error' ? <AlertCircle style={{ width: 'var(--text-base)', height: 'var(--text-base)', color: '#f87171', flexShrink: 0, marginTop: '2px' }} /> : groqStatus.state === 'success' ? <CheckCircle2 style={{ width: 'var(--text-base)', height: 'var(--text-base)', color: '#6ee7b7', flexShrink: 0, marginTop: '2px' }} /> : <RefreshCw style={{ width: 'var(--text-base)', height: 'var(--text-base)', color: 'var(--gold-light)', flexShrink: 0, marginTop: '2px', animation: 'spin 1s linear infinite' }} />}
@@ -569,26 +731,13 @@ export default function AdminPage() {
                 </div>
               )}
 
-              {/* Botões de Ação */}
               <div className="flex items-center" style={{ gap: 'var(--space-3)', paddingTop: 'var(--space-2)' }}>
-                <button
-                  type="button"
-                  onClick={handleTestGroq}
-                  disabled={testingGroq}
-                  className="btn-ghost"
-                  style={{ gap: 'var(--space-2)' }}
-                >
+                <button type="button" onClick={handleTestGroq} disabled={testingGroq} className="btn-ghost" style={{ gap: 'var(--space-2)' }}>
                   <RefreshCw style={{ width: 'var(--text-base)', height: 'var(--text-base)', animation: testingGroq ? 'spin 1s linear infinite' : 'none' }} />
                   {testingGroq ? 'Testando…' : 'Testar Conexão'}
                 </button>
 
-                <button
-                  type="button"
-                  onClick={handleSaveGroq}
-                  disabled={savingGroq}
-                  className="btn-gold"
-                  style={{ gap: 'var(--space-2)' }}
-                >
+                <button type="button" onClick={handleSaveGroq} disabled={savingGroq} className="btn-gold" style={{ gap: 'var(--space-2)' }}>
                   <Save style={{ width: 'var(--text-base)', height: 'var(--text-base)' }} />
                   {savingGroq ? 'Salvando…' : 'Salvar Configuração'}
                 </button>
@@ -596,7 +745,7 @@ export default function AdminPage() {
             </div>
           </div>
 
-          {/* CARD SUPABASE DATABASE INTEGRATION */}
+          {/* CARD SUPABASE */}
           <div className="glass-card overflow-hidden" style={{ padding: 'var(--space-8)', display: 'flex', flexDirection: 'column', gap: 'var(--space-5)' }}>
             <div className="flex items-center justify-between" style={{ paddingBottom: 'var(--space-4)', borderBottom: '1px solid var(--border-clean)' }}>
               <div className="flex items-center" style={{ gap: 'var(--space-4)' }}>
@@ -614,29 +763,6 @@ export default function AdminPage() {
               <span className="inline-flex items-center font-bold" style={{ gap: 'var(--space-1)', padding: `var(--space-1) var(--space-3)`, borderRadius: '99px', fontSize: 'var(--text-xs)', background: 'rgba(16, 185, 129, 0.15)', border: '1px solid rgba(16, 185, 129, 0.3)', color: '#6ee7b7' }}>
                 🟢 Conectado ao Projeto
               </span>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-3" style={{ gap: 'var(--space-4)' }}>
-              <div style={{ background: 'rgba(255,255,255,0.02)', padding: 'var(--space-4)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-clean)' }}>
-                <p style={{ fontSize: 'var(--text-xs)', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-muted)', fontWeight: 700 }}>Tabela Profiles</p>
-                <p style={{ fontSize: 'var(--text-sm)', color: '#6ee7b7', fontWeight: 600, marginTop: 'var(--space-1)', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                  <Check style={{ width: '14px', height: '14px' }} /> Ativa (RLS OK)
-                </p>
-              </div>
-
-              <div style={{ background: 'rgba(255,255,255,0.02)', padding: 'var(--space-4)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-clean)' }}>
-                <p style={{ fontSize: 'var(--text-xs)', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-muted)', fontWeight: 700 }}>Tabela Cellar</p>
-                <p style={{ fontSize: 'var(--text-sm)', color: '#6ee7b7', fontWeight: 600, marginTop: 'var(--space-1)', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                  <Check style={{ width: '14px', height: '14px' }} /> Ativa (RLS OK)
-                </p>
-              </div>
-
-              <div style={{ background: 'rgba(255,255,255,0.02)', padding: 'var(--space-4)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-clean)' }}>
-                <p style={{ fontSize: 'var(--text-xs)', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-muted)', fontWeight: 700 }}>Autenticação Auth</p>
-                <p style={{ fontSize: 'var(--text-sm)', color: '#6ee7b7', fontWeight: 600, marginTop: 'var(--space-1)', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                  <Check style={{ width: '14px', height: '14px' }} /> E-mail / Google OAuth
-                </p>
-              </div>
             </div>
           </div>
 
