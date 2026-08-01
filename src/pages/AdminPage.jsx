@@ -48,7 +48,7 @@ export default function AdminPage() {
 
   // MODAL DE ADICIONAR CONEXÃO
   const [showAddModal, setShowAddModal] = useState(false);
-  const [newConnType, setNewConnType] = useState('wineapi');
+  const [newConnType, setNewConnType] = useState('gemini'); // 'gemini' | 'openai' | 'wineapi' | 'groq' | 'custom'
   const [newConnName, setNewConnName] = useState('');
   const [newConnKey, setNewConnKey] = useState('');
 
@@ -75,7 +75,7 @@ export default function AdminPage() {
     }
   };
 
-  // Carrega conexões salvas dinamicamente do banco de dados (app_config) e localStorage
+  // Carrega conexões salvas dinamicamente do banco de dados (app_config) e localStorage (SEM FALLBACKS DE ENV)
   const loadConnectionsList = async () => {
     setLoadingConnections(true);
     let list = [];
@@ -91,57 +91,68 @@ export default function AdminPage() {
       console.warn('[AdminPage] Tabela app_config indisponível:', err);
     }
 
-    // Verifica flags de exclusão
-    const wineDeleted = localStorage.getItem('vinovision_wineapi_key_deleted') === 'true';
-    const groqDeleted = localStorage.getItem('vinovision_groq_key_deleted') === 'true';
-
-    // 1. Chave wineAPI.io
-    const wineDb = dbKeys.find(item => item.key === 'wineapi_key')?.value;
-    const wineVal = wineDb?.trim() || (wineDeleted ? '' : (localStorage.getItem('vinovision_wineapi_key') || import.meta.env.VITE_WINEAPI_KEY || '').trim());
-
-    if (wineVal && !wineDeleted) {
-      list.push({
-        id: 'wineapi_key',
-        keyName: 'wineapi_key',
-        name: 'wineAPI.io Integration',
-        description: 'API especialista em reconhecimento visual e banco de dados global de vinhos (wineAPI.io)',
-        value: wineVal,
-        badge: 'Principal',
-        type: 'wineapi'
-      });
-    }
-
-    // 2. Chave Groq Vision
-    const groqDb = dbKeys.find(item => item.key === 'groq_api_key')?.value;
-    const groqVal = groqDb?.trim() || (groqDeleted ? '' : (localStorage.getItem('vinovision_groq_key') || import.meta.env.VITE_GROQ_API_KEY || '').trim());
-
-    if (groqVal && !groqDeleted) {
-      list.push({
-        id: 'groq_api_key',
-        keyName: 'groq_api_key',
-        name: 'Groq AI Vision Integration',
-        description: 'Visão computacional via modelos Llama 3.2 Vision (Motor secundário de IA)',
-        value: groqVal,
-        badge: 'Motor IA',
-        type: 'groq'
-      });
-    }
-
-    // 3. Outras conexões dinâmicas do Supabase
+    // Processa chaves gravadas no banco Supabase
     dbKeys.forEach(item => {
-      if (item.key === 'wineapi_key' || item.key === 'groq_api_key') return;
       if (!item.value || !item.value.trim()) return;
+
+      let name = 'Conexão Personalizada';
+      let desc = `Integração (${item.key})`;
+      let type = 'custom';
+      let badge = 'Ativa';
+
+      if (item.key === 'wineapi_key' || item.key.includes('wine')) {
+        name = 'wineAPI.io Integration';
+        desc = 'API especialista em reconhecimento visual e banco de vinhos (wineAPI.io)';
+        type = 'wineapi';
+        badge = 'wineAPI';
+      } else if (item.key === 'groq_api_key' || item.key.includes('groq')) {
+        name = 'Groq AI Vision';
+        desc = 'Visão computacional via modelos Llama 3.2 Vision';
+        type = 'groq';
+        badge = 'Groq';
+      } else if (item.key === 'gemini_api_key' || item.key.includes('gemini')) {
+        name = 'Google Gemini 2.0 Flash';
+        desc = 'IA de Visão Computacional ultra-rápida via Google AI Studio';
+        type = 'gemini';
+        badge = 'Google Gemini';
+      } else if (item.key === 'openai_api_key' || item.key.includes('openai')) {
+        name = 'OpenAI GPT-4o Mini';
+        desc = 'IA de Visão Computacional da OpenAI';
+        type = 'openai';
+        badge = 'OpenAI';
+      }
 
       list.push({
         id: item.key,
         keyName: item.key,
-        name: item.key.includes('gemini') ? 'Google Gemini 2.0' : item.key.includes('openai') ? 'OpenAI GPT-4o' : 'Conexão Personalizada',
-        description: `Integração configurada globalmente (${item.key})`,
+        name: name,
+        description: desc,
         value: item.value.trim(),
-        badge: 'Ativa',
-        type: 'custom'
+        badge: badge,
+        type: type
       });
     });
+
+    // Processa chaves salvas apenas no LocalStorage se não estiverem no banco
+    const wineLocal = (localStorage.getItem('vinovision_wineapi_key') || '').trim();
+    if (wineLocal && !list.some(c => c.keyName === 'wineapi_key')) {
+      list.push({ id: 'wineapi_key', keyName: 'wineapi_key', name: 'wineAPI.io Integration', description: 'Salvo localmente no navegador', value: wineLocal, badge: 'Local', type: 'wineapi' });
+    }
+
+    const groqLocal = (localStorage.getItem('vinovision_groq_key') || '').trim();
+    if (groqLocal && !list.some(c => c.keyName === 'groq_api_key')) {
+      list.push({ id: 'groq_api_key', keyName: 'groq_api_key', name: 'Groq AI Vision', description: 'Salvo localmente no navegador', value: groqLocal, badge: 'Local', type: 'groq' });
+    }
+
+    const geminiLocal = (localStorage.getItem('vinovision_gemini_key') || '').trim();
+    if (geminiLocal && !list.some(c => c.keyName === 'gemini_api_key')) {
+      list.push({ id: 'gemini_api_key', keyName: 'gemini_api_key', name: 'Google Gemini 2.0 Flash', description: 'Salvo localmente no navegador', value: geminiLocal, badge: 'Local', type: 'gemini' });
+    }
+
+    const openaiLocal = (localStorage.getItem('vinovision_openai_key') || '').trim();
+    if (openaiLocal && !list.some(c => c.keyName === 'openai_api_key')) {
+      list.push({ id: 'openai_api_key', keyName: 'openai_api_key', name: 'OpenAI GPT-4o Mini', description: 'Salvo localmente no navegador', value: openaiLocal, badge: 'Local', type: 'openai' });
+    }
 
     setConnectionsList(list);
     setLoadingConnections(false);
@@ -200,13 +211,17 @@ export default function AdminPage() {
 
     try {
       if (keyName === 'wineapi_key') {
-        localStorage.removeItem('vinovision_wineapi_key_deleted');
         if (val) localStorage.setItem('vinovision_wineapi_key', val);
         else localStorage.removeItem('vinovision_wineapi_key');
       } else if (keyName === 'groq_api_key') {
-        localStorage.removeItem('vinovision_groq_key_deleted');
         if (val) localStorage.setItem('vinovision_groq_key', val);
         else localStorage.removeItem('vinovision_groq_key');
+      } else if (keyName === 'gemini_api_key') {
+        if (val) localStorage.setItem('vinovision_gemini_key', val);
+        else localStorage.removeItem('vinovision_gemini_key');
+      } else if (keyName === 'openai_api_key') {
+        if (val) localStorage.setItem('vinovision_openai_key', val);
+        else localStorage.removeItem('vinovision_openai_key');
       }
 
       const { error } = await supabase
@@ -216,7 +231,7 @@ export default function AdminPage() {
       if (error) {
         showToast('success', `Conexão "${item.name}" salva localmente!`);
       } else {
-        showToast('success', `Conexão "${item.name}" salva globalmente no banco de dados!`);
+        showToast('success', `Conexão "${item.name}" salva no banco de dados!`);
       }
     } catch (err) {
       showToast('success', `Conexão salva no navegador!`);
@@ -250,6 +265,11 @@ export default function AdminPage() {
         const data = await res.json();
         setStatusMap(prev => ({ ...prev, [keyName]: { state: 'success', message: `Conexão OK! ${data.data?.length || 0} modelos ativos.` } }));
         showToast('success', `Conexão ${item.name} testada e aprovada!`);
+      } else if (item.type === 'gemini') {
+        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${val}`);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        setStatusMap(prev => ({ ...prev, [keyName]: { state: 'success', message: 'Chave do Google Gemini Válida!' } }));
+        showToast('success', 'Conexão Google Gemini testada!');
       } else {
         setStatusMap(prev => ({ ...prev, [keyName]: { state: 'success', message: 'Serviço de chave pronto para uso.' } }));
         showToast('success', `Conexão ${item.name} pronta!`);
@@ -262,7 +282,7 @@ export default function AdminPage() {
     }
   };
 
-  // ── EXCLUIR CONEXÃO (PERMANENTE - REMOVE DO BANCO, MARCA DELETED E REMOVE DA TELA) ──
+  // ── EXCLUIR CONEXÃO (PERMANENTE - REMOVE DO BANCO E DO NAVEGADOR) ──
   const handleDeleteConnectionItem = async (item) => {
     const keyName = item.keyName;
     const labelName = item.name;
@@ -274,14 +294,11 @@ export default function AdminPage() {
         .delete()
         .eq('key', keyName);
 
-      // 2. Marca flag de exclusão no LocalStorage para impedir a ressurreição por VITE_...
-      if (keyName === 'wineapi_key') {
-        localStorage.removeItem('vinovision_wineapi_key');
-        localStorage.setItem('vinovision_wineapi_key_deleted', 'true');
-      } else if (keyName === 'groq_api_key') {
-        localStorage.removeItem('vinovision_groq_key');
-        localStorage.setItem('vinovision_groq_key_deleted', 'true');
-      }
+      // 2. Apaga do LocalStorage
+      if (keyName === 'wineapi_key') localStorage.removeItem('vinovision_wineapi_key');
+      else if (keyName === 'groq_api_key') localStorage.removeItem('vinovision_groq_key');
+      else if (keyName === 'gemini_api_key') localStorage.removeItem('vinovision_gemini_key');
+      else if (keyName === 'openai_api_key') localStorage.removeItem('vinovision_openai_key');
 
       // 3. REMOVE IMEDIATAMENTE DA LISTA DE EXIBIÇÃO DA TELA!
       setConnectionsList(prev => prev.filter(c => c.keyName !== keyName));
@@ -306,28 +323,30 @@ export default function AdminPage() {
     let connDesc = 'Integração de API adicionada pelo Admin';
     let connBadge = 'Ativa';
 
-    if (newConnType === 'wineapi') {
+    if (newConnType === 'gemini') {
+      targetKey = 'gemini_api_key';
+      connName = 'Google Gemini 2.0 Flash';
+      connDesc = 'IA de Visão Computacional ultra-rápida via Google AI Studio';
+      connBadge = 'Google Gemini';
+      localStorage.setItem('vinovision_gemini_key', val);
+    } else if (newConnType === 'openai') {
+      targetKey = 'openai_api_key';
+      connName = 'OpenAI GPT-4o Mini';
+      connDesc = 'IA de Visão Computacional da OpenAI';
+      connBadge = 'OpenAI';
+      localStorage.setItem('vinovision_openai_key', val);
+    } else if (newConnType === 'wineapi') {
       targetKey = 'wineapi_key';
       connName = 'wineAPI.io Integration';
-      connDesc = 'API especialista em reconhecimento visual e banco de dados global de vinhos (wineAPI.io)';
-      connBadge = 'Principal';
-      localStorage.removeItem('vinovision_wineapi_key_deleted');
+      connDesc = 'API especialista em reconhecimento visual e banco de dados global de vinhos';
+      connBadge = 'wineAPI';
       localStorage.setItem('vinovision_wineapi_key', val);
     } else if (newConnType === 'groq') {
       targetKey = 'groq_api_key';
-      connName = 'Groq AI Vision Integration';
-      connDesc = 'Visão computacional via modelos Llama 3.2 Vision (Motor secundário de IA)';
-      connBadge = 'Motor IA';
-      localStorage.removeItem('vinovision_groq_key_deleted');
+      connName = 'Groq AI Vision';
+      connDesc = 'Visão computacional via modelos Llama 3.2 Vision';
+      connBadge = 'Groq';
       localStorage.setItem('vinovision_groq_key', val);
-    } else if (newConnType === 'gemini') {
-      targetKey = 'gemini_api_key';
-      connName = 'Google Gemini 2.0 Integration';
-      connDesc = 'Visão computacional via Google AI Studio';
-    } else if (newConnType === 'openai') {
-      targetKey = 'openai_api_key';
-      connName = 'OpenAI GPT-4o Integration';
-      connDesc = 'Visão computacional via OpenAI API';
     }
 
     const newConnObj = {
@@ -695,10 +714,10 @@ export default function AdminPage() {
               Carregando conexões cadastradas…
             </div>
           ) : connectionsList.length === 0 ? (
-            <div className="glass-card" style={{ padding: 'var(--space-12)', textAlign: 'center', color: 'var(--text-muted)' }}>
+            <div className="glass-card animate-fadeIn" style={{ padding: 'var(--space-12)', textAlign: 'center', color: 'var(--text-muted)' }}>
               <Server style={{ width: 'var(--text-3xl)', height: 'var(--text-3xl)', margin: '0 auto var(--space-3)', color: 'var(--gold-accent)' }} />
               <h4 style={{ fontSize: 'var(--text-lg)', color: 'white', fontWeight: 600 }}>Nenhuma conexão de API cadastrada</h4>
-              <p style={{ fontSize: 'var(--text-sm)', marginTop: 'var(--space-1)' }}>Clique no botão <strong>"+ Adicionar Conexão"</strong> acima para configurar uma nova API.</p>
+              <p style={{ fontSize: 'var(--text-sm)', marginTop: 'var(--space-1)' }}>Clique no botão <strong>"+ Adicionar Conexão"</strong> acima para configurar uma nova API (ex: Google Gemini, OpenAI, etc.).</p>
             </div>
           ) : (
             connectionsList.map(item => {
@@ -713,8 +732,8 @@ export default function AdminPage() {
                   {/* Cabeçalho do Card */}
                   <div className="flex items-center justify-between" style={{ paddingBottom: 'var(--space-4)', borderBottom: '1px solid var(--border-clean)' }}>
                     <div className="flex items-center" style={{ gap: 'var(--space-4)' }}>
-                      <div style={{ width: 'clamp(2.5rem,4vw,3rem)', height: 'clamp(2.5rem,4vw,3rem)', borderRadius: 'var(--radius-lg)', background: item.type === 'wineapi' ? 'rgba(212,175,55,0.2)' : 'rgba(128,14,38,0.4)', border: '1px solid rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                        {item.type === 'wineapi' ? <Wine style={{ width: 'var(--text-xl)', height: 'var(--text-xl)', color: 'var(--gold-accent)' }} /> : <Sparkles style={{ width: 'var(--text-xl)', height: 'var(--text-xl)', color: 'var(--gold-accent)' }} />}
+                      <div style={{ width: 'clamp(2.5rem,4vw,3rem)', height: 'clamp(2.5rem,4vw,3rem)', borderRadius: 'var(--radius-lg)', background: item.type === 'gemini' ? 'rgba(59,130,246,0.2)' : item.type === 'openai' ? 'rgba(16,185,129,0.2)' : 'rgba(212,175,55,0.2)', border: '1px solid rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                        <Sparkles style={{ width: 'var(--text-xl)', height: 'var(--text-xl)', color: item.type === 'gemini' ? '#60a5fa' : item.type === 'openai' ? '#6ee7b7' : 'var(--gold-accent)' }} />
                       </div>
                       <div>
                         <div className="flex items-center" style={{ gap: 'var(--space-2)' }}>
@@ -882,10 +901,10 @@ export default function AdminPage() {
                   onChange={e => setNewConnType(e.target.value)}
                   style={{ background: 'rgba(11,5,8,0.9)', border: '1px solid var(--border-clean)', borderRadius: 'var(--radius-md)', padding: 'var(--space-3)', fontSize: 'var(--text-sm)', color: 'white', outline: 'none' }}
                 >
-                  <option value="wineapi">wineAPI.io (Reconhecimento Visual & Base de Vinhos)</option>
+                  <option value="gemini">Google Gemini 2.0 Flash (Gratuito no AI Studio)</option>
+                  <option value="openai">OpenAI GPT-4o Mini (Visão API)</option>
+                  <option value="wineapi">wineAPI.io (Base Global de Vinhos)</option>
                   <option value="groq">Groq AI Vision (Llama 3.2 Vision)</option>
-                  <option value="gemini">Google Gemini 2.0 (AI Studio)</option>
-                  <option value="openai">OpenAI GPT-4o (Vision API)</option>
                   <option value="custom">Outra API Personalizada (Custom)</option>
                 </select>
               </div>
