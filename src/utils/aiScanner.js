@@ -48,13 +48,13 @@ export async function scanWineLabel(imageInput, onProgress = () => {}) {
     }
   }
 
-  // Se houver chave Groq e a imagem for arquivo ou base64 → Executa IA REAL
+  // Se houver chave Groq e a imagem for arquivo ou base64 → Executa IA REAL com compressão prévia
   if (groqApiKey && (imageInput instanceof File || (typeof imageInput === 'string' && imageInput.startsWith('data:image')))) {
     try {
       onProgress({ stage: 'init', percent: 20, text: 'Otimizando e comprimindo foto do rótulo…' });
       const optimizedBase64 = await compressImageForVision(imageInput, 1024, 1024, 0.85);
 
-      onProgress({ stage: 'ai_vision', percent: 60, text: 'Analisando rótulo com Groq Llama 3.2 Vision…' });
+      onProgress({ stage: 'ai_vision', percent: 60, text: 'Analisando rótulo com Visão Computacional Groq…' });
       const result = await analyzeWineWithGroq(optimizedBase64, groqApiKey, onProgress);
       
       onProgress({ stage: 'done', percent: 100, text: 'Vinho analisado com sucesso!' });
@@ -76,14 +76,55 @@ export async function scanWineLabel(imageInput, onProgress = () => {}) {
 }
 
 /**
- * Envia a imagem otimizada para a API da Groq usando o modelo Llama 3.2 Vision
+ * Consulta a API da Groq para obter a lista de modelos ativos na conta
+ */
+async function fetchActiveGroqModels(apiKey) {
+  try {
+    const res = await fetch('https://api.groq.com/openai/v1/models', {
+      headers: { 'Authorization': `Bearer ${apiKey.trim()}` }
+    });
+    if (res.ok) {
+      const data = await res.json();
+      const ids = (data.data || []).map(m => m.id);
+      console.log('[VinoVision IA] Modelos retornados pela API Groq:', ids);
+      return ids;
+    }
+  } catch (e) {
+    console.warn('[VinoVision IA] Erro ao listar /models:', e);
+  }
+  return [];
+}
+
+/**
+ * Envia a imagem otimizada para a API da Groq
  */
 async function analyzeWineWithGroq(base64DataUrl, apiKey, onProgress) {
-  // Lista de modelos de visão oficiais da Groq em ordem de precisão
-  const candidateModels = [
+  const activeModels = await fetchActiveGroqModels(apiKey);
+
+  // Lista de modelos de visão prioritários (filtra apenas os ativos se disponíveis)
+  const defaultVisionCandidates = [
+    'llama-3.2-11b-vision-instruct',
+    'llama-3.2-90b-vision-instruct',
+    'llama-3.2-11b-vision-preview',
     'llama-3.2-90b-vision-preview',
-    'llama-3.2-11b-vision-preview'
+    'llava-v1.5-7b-llama-3-eval'
   ];
+
+  // Se a consulta a /models retornou modelos da conta, coloca no topo os que têm 'vision' ou 'llama-3.2'
+  let candidateModels = [];
+  if (activeModels.length > 0) {
+    const accountVisionModels = activeModels.filter(m => 
+      m.toLowerCase().includes('vision') || 
+      m.toLowerCase().includes('llava') ||
+      m.toLowerCase().includes('3.2')
+    );
+    candidateModels = [...accountVisionModels, ...defaultVisionCandidates];
+  } else {
+    candidateModels = defaultVisionCandidates;
+  }
+
+  // Remove duplicatas
+  candidateModels = candidateModels.filter((v, i, a) => a.indexOf(v) === i);
 
   const promptText = `Você é um mestre sommelier e especialista em visão computacional de vinhos.
 Examine cuidadosamente esta foto de rótulo de vinho e extraia/identifique as informações reais contidas na imagem.
@@ -129,7 +170,7 @@ Se alguma informação não estiver visível na foto, preencha com uma inferênc
 
   for (const modelName of candidateModels) {
     try {
-      console.log(`[VinoVision IA] Enviando requisição para Groq (Modelo: ${modelName})…`);
+      console.log(`[VinoVision IA] Testando requisição com modelo: ${modelName}…`);
       
       const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
         method: 'POST',
@@ -161,15 +202,24 @@ Se alguma informação não estiver visível na foto, preencha com uma inferênc
         const errJson = await response.json().catch(() => ({}));
         const errMsg = errJson.error?.message || `HTTP ${response.status} ${response.statusText}`;
 
-        console.warn(`[VinoVision IA] Groq respondeu com erro no modelo ${modelName}:`, errMsg);
+        console.warn(`[VinoVision IA] Modelo ${modelName} retornou erro:`, errMsg);
 
         if (response.status === 401) {
           throw new Error('Chave da API Groq inválida. Verifique a chave configurada no Painel Admin.');
         }
 
-        // Se o modelo não estiver acessível, tenta o próximo modelo da lista
-        if (response.status === 404 || response.status === 400 || errMsg.toLowerCase().includes('does not exist') || errMsg.toLowerCase().includes('access')) {
-          lastError = new Error(errMsg);
+        // Se o modelo foi descontinuado, não existe ou não tem permissão, pula para o próximo sem travar o app
+        const isModelUnavailable = 
+          response.status === 404 || 
+          response.status === 400 || 
+          errMsg.toLowerCase().includes('does not exist') ||
+          errMsg.toLowerCase().includes('decommissioned') ||
+          errMsg.toLowerCase().includes('deprecated') ||
+          errMsg.toLowerCase().includes('no longer supported') ||
+          errMsg.toLowerCase().includes('access');
+
+        if (isModelUnavailable) {
+          lastError = new Error(`Modelo ${modelName}: ${errMsg}`);
           continue;
         }
 
@@ -210,7 +260,7 @@ Se alguma informação não estiver visível na foto, preencha com uma inferênc
     }
   }
 
-  throw new Error(`Falha ao acessar os modelos de Visão da Groq: ${lastError?.message || 'Verifique se os modelos Llama 3.2 Vision estão ativos na sua conta no console.groq.com.'}`);
+  throw new Error(`Falha ao acessar modelos de Visão Groq: ${lastError?.message || 'Nenhum modelo de visão ativo foi encontrado na sua conta Groq.'}`);
 }
 
 /**
