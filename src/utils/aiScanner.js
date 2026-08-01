@@ -73,7 +73,7 @@ export async function scanWineLabel(imageInput, onProgress = () => {}) {
 
     for (const keyObj of activeKeys) {
       try {
-        // Groq API Key (Com suporte inteligente a Rate Limits e Headers x-ratelimit)
+        // Groq API Key (Visão Computacional Llama 3.2 Vision)
         if (keyObj.keyName === 'groq_api_key' || keyObj.value.startsWith('gsk_') || keyObj.keyName.includes('groq')) {
           onProgress({ stage: 'init', percent: 20, text: 'Otimizando foto para Groq AI…' });
           const optimizedBase64 = await compressImageForVision(imageInput, 1024, 1024, 0.85);
@@ -119,15 +119,33 @@ export async function scanWineLabel(imageInput, onProgress = () => {}) {
 }
 
 /**
- * Envia a imagem para a API da Groq interpretando os cabeçalhos de limite (Rate Limits & retry-after)
+ * Envia a imagem para os modelos de Visão da Groq (llama-3.2-11b-vision-preview e llama-3.2-90b-vision-preview)
  */
 async function analyzeWineWithGroq(base64DataUrl, apiKey, onProgress, isRetry = false) {
-  const candidateModels = [
+  // Consulta dinamicamente os modelos ativos da conta Groq
+  const activeGroqModels = await fetchActiveGroqModels(apiKey);
+
+  const defaultVisionModels = [
+    'llama-3.2-11b-vision-preview',
+    'llama-3.2-90b-vision-preview',
     'llama-3.2-11b-vision-instruct',
-    'llama-3.2-90b-vision-instruct',
-    'llama-3.3-70b-versatile',
-    'llama-3.1-8b-instant'
+    'llama-3.2-90b-vision-instruct'
   ];
+
+  let candidateModels = [];
+  if (activeGroqModels.length > 0) {
+    const visionFiltered = activeGroqModels.filter(m => 
+      m.toLowerCase().includes('vision') || 
+      m.toLowerCase().includes('llava') ||
+      m.toLowerCase().includes('3.2')
+    );
+    candidateModels = [...visionFiltered, ...defaultVisionModels];
+  } else {
+    candidateModels = defaultVisionModels;
+  }
+
+  // Remove duplicatas mantendo a ordem
+  candidateModels = candidateModels.filter((v, i, a) => a.indexOf(v) === i);
 
   const promptText = `Você é um mestre sommelier e especialista em visão computacional de vinhos.
 Examine cuidadosamente esta foto de rótulo de vinho e extraia/identifique as informações reais contidas na imagem.
@@ -161,7 +179,7 @@ Retorne EXCLUSIVAMENTE um objeto JSON válido em português (sem texto antes/dep
 
   for (const modelName of candidateModels) {
     try {
-      console.log(`[VinoVision IA] Enviando imagem para Groq API (${modelName})…`);
+      console.log(`[VinoVision IA] Enviando imagem para Groq Vision (${modelName})…`);
 
       const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
         method: 'POST',
@@ -181,7 +199,8 @@ Retorne EXCLUSIVAMENTE um objeto JSON válido em português (sem texto antes/dep
               ]
             }
           ],
-          temperature: 0.1
+          temperature: 0.1,
+          max_tokens: 1500
         })
       });
 
@@ -211,7 +230,10 @@ Retorne EXCLUSIVAMENTE um objeto JSON válido em português (sem texto antes/dep
 
       if (!response.ok) {
         const errJson = await response.json().catch(() => ({}));
-        lastError = new Error(errJson.error?.message || `HTTP ${response.status}`);
+        const errMsg = errJson.error?.message || `HTTP ${response.status} ${response.statusText}`;
+
+        console.warn(`[Groq AI] Erro no modelo ${modelName}:`, errMsg);
+        lastError = new Error(`Erro na API Groq (${modelName}): ${errMsg}`);
         continue;
       }
 
@@ -232,14 +254,31 @@ Retorne EXCLUSIVAMENTE um objeto JSON válido em português (sem texto antes/dep
         image: base64DataUrl,
         labelThumbnail: base64DataUrl,
         scannedAt: new Date().toISOString(),
-        aiProvider: `Groq AI (${modelName})`
+        aiProvider: `Groq Vision (${modelName})`
       };
     } catch (err) {
+      console.warn(`[Groq AI] Exceção no modelo ${modelName}:`, err.message);
       lastError = err;
     }
   }
 
   throw lastError || new Error('Falha ao processar rótulo na API da Groq.');
+}
+
+/**
+ * Consulta a lista de modelos ativos na conta Groq
+ */
+async function fetchActiveGroqModels(apiKey) {
+  try {
+    const res = await fetch('https://api.groq.com/openai/v1/models', {
+      headers: { 'Authorization': `Bearer ${apiKey.trim()}` }
+    });
+    if (res.ok) {
+      const data = await res.json();
+      return (data.data || []).map(m => m.id);
+    }
+  } catch (e) {}
+  return [];
 }
 
 /**
