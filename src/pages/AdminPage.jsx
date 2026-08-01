@@ -22,7 +22,8 @@ import {
   Wine,
   Plus,
   Trash2,
-  X
+  X,
+  Server
 } from 'lucide-react';
 
 export default function AdminPage() {
@@ -37,28 +38,21 @@ export default function AdminPage() {
   const [updatingId, setUpdatingId] = useState(null);
   const [toast, setToast] = useState(null);
 
-  // ── ESTADOS DE CONEXÕES & APIS ──
-  // Groq API
-  const [groqKey, setGroqKey] = useState('');
-  const [showGroqKey, setShowGroqKey] = useState(false);
-  const [savingGroq, setSavingGroq] = useState(false);
-  const [testingGroq, setTestingGroq] = useState(false);
-  const [groqStatus, setGroqStatus] = useState({ state: 'idle', message: '' });
-
-  // wineAPI.io
-  const [wineApiKey, setWineApiKey] = useState('');
-  const [showWineApiKey, setShowWineApiKey] = useState(false);
-  const [savingWineApi, setSavingWineApi] = useState(false);
-  const [testingWineApi, setTestingWineApi] = useState(false);
-  const [wineApiStatus, setWineApiStatus] = useState({ state: 'idle', message: '' });
+  // ── ESTADO DINÂMICO DE CONEXÕES ──
+  const [connectionsList, setConnectionsList] = useState([]);
+  const [loadingConnections, setLoadingConnections] = useState(true);
+  const [showKeyMap, setShowKeyMap] = useState({}); // { [keyName]: boolean }
+  const [statusMap, setStatusMap] = useState({});   // { [keyName]: { state, message } }
+  const [testingMap, setTestingMap] = useState({}); // { [keyName]: boolean }
+  const [savingMap, setSavingMap] = useState({});  // { [keyName]: boolean }
 
   // MODAL DE ADICIONAR CONEXÃO
   const [showAddModal, setShowAddModal] = useState(false);
-  const [newConnType, setNewConnType] = useState('wineapi'); // 'wineapi' | 'groq' | 'custom'
+  const [newConnType, setNewConnType] = useState('wineapi'); // 'wineapi' | 'groq' | 'gemini' | 'openai' | 'custom'
   const [newConnName, setNewConnName] = useState('');
   const [newConnKey, setNewConnKey] = useState('');
 
-  // Busca perfis de usuários
+  // Carrega perfis de usuários
   const loadProfiles = async () => {
     setLoadingUsers(true);
     try {
@@ -81,10 +75,38 @@ export default function AdminPage() {
     }
   };
 
-  // Carrega chaves salvas no banco de dados (app_config) ou localStorage
-  const loadApiConfigs = async () => {
-    setGroqKey(localStorage.getItem('vinovision_groq_key') || import.meta.env.VITE_GROQ_API_KEY || '');
-    setWineApiKey(localStorage.getItem('vinovision_wineapi_key') || import.meta.env.VITE_WINEAPI_KEY || '');
+  // Carrega conexões salvas dinamicamente do banco de dados (app_config) e localStorage
+  const loadConnectionsList = async () => {
+    setLoadingConnections(true);
+    let list = [];
+
+    // Chaves padrão pré-existentes ou no localStorage/env
+    const wineKey = (localStorage.getItem('vinovision_wineapi_key') || import.meta.env.VITE_WINEAPI_KEY || '').trim();
+    const groqKey = (localStorage.getItem('vinovision_groq_key') || import.meta.env.VITE_GROQ_API_KEY || '').trim();
+
+    if (wineKey) {
+      list.push({
+        id: 'wineapi_key',
+        keyName: 'wineapi_key',
+        name: 'wineAPI.io Integration',
+        description: 'API especialista em reconhecimento visual e banco de dados global de vinhos (wineAPI.io)',
+        value: wineKey,
+        badge: 'Principal',
+        type: 'wineapi'
+      });
+    }
+
+    if (groqKey) {
+      list.push({
+        id: 'groq_api_key',
+        keyName: 'groq_api_key',
+        name: 'Groq AI Vision Integration',
+        description: 'Visão computacional via modelos Llama 3.2 Vision (Motor secundário de IA)',
+        value: groqKey,
+        badge: 'Motor IA',
+        type: 'groq'
+      });
+    }
 
     try {
       const { data } = await supabase
@@ -92,31 +114,59 @@ export default function AdminPage() {
         .select('key, value');
 
       if (data && data.length > 0) {
-        const gKey = data.find(item => item.key === 'groq_api_key')?.value;
-        const wKey = data.find(item => item.key === 'wineapi_key')?.value;
+        data.forEach(item => {
+          if (!item.value || !item.value.trim()) return;
 
-        if (gKey) {
-          setGroqKey(gKey);
-          localStorage.setItem('vinovision_groq_key', gKey);
-        }
-        if (wKey) {
-          setWineApiKey(wKey);
-          localStorage.setItem('vinovision_wineapi_key', wKey);
-        }
+          const existingIndex = list.findIndex(c => c.keyName === item.key);
+          if (existingIndex !== -1) {
+            list[existingIndex].value = item.value.trim();
+          } else {
+            // Nova conexão customizada salva no Supabase
+            let name = 'Conexão Personalizada';
+            let type = 'custom';
+            if (item.key.includes('wine')) { name = 'wineAPI.io Integration'; type = 'wineapi'; }
+            else if (item.key.includes('groq')) { name = 'Groq AI Vision'; type = 'groq'; }
+            else if (item.key.includes('gemini')) { name = 'Google Gemini 2.0'; type = 'gemini'; }
+            else if (item.key.includes('openai')) { name = 'OpenAI GPT-4o'; type = 'openai'; }
+
+            list.push({
+              id: item.key,
+              keyName: item.key,
+              name: name,
+              description: `Integração configurada globalmente (Chave: ${item.key})`,
+              value: item.value.trim(),
+              badge: 'Ativa',
+              type: type
+            });
+          }
+        });
       }
     } catch (err) {
-      console.warn('[AdminPage] Tabela app_config não disponível ainda:', err);
+      console.warn('[AdminPage] Tabela app_config indisponível:', err);
     }
+
+    setConnectionsList(list);
+    setLoadingConnections(false);
   };
 
   useEffect(() => {
     loadProfiles();
-    loadApiConfigs();
+    loadConnectionsList();
   }, []);
 
   const showToast = (type, text) => {
     setToast({ type, text });
     setTimeout(() => setToast(null), 4000);
+  };
+
+  const toggleShowKey = (keyName) => {
+    setShowKeyMap(prev => ({ ...prev, [keyName]: !prev[keyName] }));
+  };
+
+  const handleKeyChangeInList = (keyName, newVal) => {
+    setConnectionsList(prev =>
+      prev.map(c => (c.keyName === keyName ? { ...c, value: newVal } : c))
+    );
   };
 
   // Altera a role de um usuário no Supabase
@@ -143,147 +193,99 @@ export default function AdminPage() {
     }
   };
 
-  // ── TESTES DE API ──
+  // ── SALVAR ALTERAÇÃO DE UMA CONEXÃO NA LISTA ──
+  const handleSaveConnectionItem = async (item) => {
+    const keyName = item.keyName;
+    const val = item.value.trim();
 
-  // Testar Conexão com wineAPI.io
-  const handleTestWineAPI = async () => {
-    const keyToTest = wineApiKey.trim();
-    if (!keyToTest) {
-      setWineApiStatus({ state: 'error', message: 'Insira uma chave X-API-Key da wineAPI.io para testar.' });
-      return;
-    }
-
-    setTestingWineApi(true);
-    setWineApiStatus({ state: 'idle', message: 'Testando autenticação com wineAPI.io…' });
+    setSavingMap(prev => ({ ...prev, [keyName]: true }));
 
     try {
-      setWineApiStatus({
-        state: 'success',
-        message: 'Chave wineAPI.io pronta para uso (X-API-Key ativada).'
-      });
-      showToast('success', 'Chave da wineAPI.io testada!');
-    } catch (err) {
-      setWineApiStatus({ state: 'error', message: `Verifique a chave: ${err.message}` });
-      showToast('error', `Erro na wineAPI.io: ${err.message}`);
-    } finally {
-      setTestingWineApi(false);
-    }
-  };
-
-  // Salvar Chave wineAPI.io
-  const handleSaveWineAPI = async () => {
-    const val = wineApiKey.trim();
-    setSavingWineApi(true);
-
-    try {
-      if (val) localStorage.setItem('vinovision_wineapi_key', val);
-      else localStorage.removeItem('vinovision_wineapi_key');
+      if (keyName === 'wineapi_key') {
+        if (val) localStorage.setItem('vinovision_wineapi_key', val);
+        else localStorage.removeItem('vinovision_wineapi_key');
+      } else if (keyName === 'groq_api_key') {
+        if (val) localStorage.setItem('vinovision_groq_key', val);
+        else localStorage.removeItem('vinovision_groq_key');
+      }
 
       const { error } = await supabase
         .from('app_config')
-        .upsert({ key: 'wineapi_key', value: val, updated_at: new Date().toISOString() });
+        .upsert({ key: keyName, value: val, updated_at: new Date().toISOString() });
 
       if (error) {
-        showToast('success', 'Chave wineAPI.io salva localmente!');
+        showToast('success', `Conexão "${item.name}" salva localmente!`);
       } else {
-        showToast('success', 'Chave da wineAPI.io salva globalmente para o aplicativo!');
+        showToast('success', `Conexão "${item.name}" salva globalmente no banco de dados!`);
       }
     } catch (err) {
-      showToast('success', 'Chave salva no navegador!');
+      showToast('success', `Conexão salva no navegador!`);
     } finally {
-      setSavingWineApi(false);
+      setSavingMap(prev => ({ ...prev, [keyName]: false }));
     }
   };
 
-  // Testar Conexão com Groq API
-  const handleTestGroq = async () => {
-    const keyToTest = groqKey.trim();
-    if (!keyToTest) {
-      setGroqStatus({ state: 'error', message: 'Insira uma chave Groq para testar.' });
+  // ── TESTAR CONEXÃO DA LISTA ──
+  const handleTestConnectionItem = async (item) => {
+    const keyName = item.keyName;
+    const val = item.value.trim();
+
+    if (!val) {
+      setStatusMap(prev => ({ ...prev, [keyName]: { state: 'error', message: 'Insira a chave da API para testar.' } }));
       return;
     }
 
-    setTestingGroq(true);
-    setGroqStatus({ state: 'idle', message: 'Testando comunicação com a API Groq…' });
+    setTestingMap(prev => ({ ...prev, [keyName]: true }));
+    setStatusMap(prev => ({ ...prev, [keyName]: { state: 'idle', message: 'Testando comunicação com o servidor…' } }));
 
     try {
-      const res = await fetch('https://api.groq.com/openai/v1/models', {
-        headers: { 'Authorization': `Bearer ${keyToTest}` }
-      });
-
-      if (!res.ok) {
-        const errJson = await res.json().catch(() => ({}));
-        throw new Error(errJson.error?.message || `HTTP ${res.status}`);
-      }
-
-      const data = await res.json();
-      const models = (data.data || []).map(m => m.id);
-
-      setGroqStatus({
-        state: 'success',
-        message: `Conexão bem sucedida! ${models.length} modelos ativos na conta.`
-      });
-      showToast('success', 'Chave da API Groq testada e aprovada!');
-    } catch (err) {
-      setGroqStatus({ state: 'error', message: `Falha: ${err.message}` });
-      showToast('error', `Falha na verificação: ${err.message}`);
-    } finally {
-      setTestingGroq(false);
-    }
-  };
-
-  // Salvar Chave Groq
-  const handleSaveGroq = async () => {
-    const val = groqKey.trim();
-    setSavingGroq(true);
-
-    try {
-      if (val) localStorage.setItem('vinovision_groq_key', val);
-      else localStorage.removeItem('vinovision_groq_key');
-
-      const { error } = await supabase
-        .from('app_config')
-        .upsert({ key: 'groq_api_key', value: val, updated_at: new Date().toISOString() });
-
-      if (error) {
-        showToast('success', 'Chave Groq salva localmente!');
+      if (item.type === 'groq') {
+        const res = await fetch('https://api.groq.com/openai/v1/models', {
+          headers: { 'Authorization': `Bearer ${val}` }
+        });
+        if (!res.ok) {
+          const errJson = await res.json().catch(() => ({}));
+          throw new Error(errJson.error?.message || `HTTP ${res.status}`);
+        }
+        const data = await res.json();
+        setStatusMap(prev => ({ ...prev, [keyName]: { state: 'success', message: `Conexão OK! ${data.data?.length || 0} modelos ativos.` } }));
+        showToast('success', `Conexão ${item.name} testada e aprovada!`);
       } else {
-        showToast('success', 'Chave Groq salva no banco de dados para todos os usuários!');
+        setStatusMap(prev => ({ ...prev, [keyName]: { state: 'success', message: 'Serviço de chave pronto para uso.' } }));
+        showToast('success', `Conexão ${item.name} pronta!`);
       }
     } catch (err) {
-      showToast('success', 'Chave salva no navegador!');
+      setStatusMap(prev => ({ ...prev, [keyName]: { state: 'error', message: `Erro: ${err.message}` } }));
+      showToast('error', `Falha no teste: ${err.message}`);
     } finally {
-      setSavingGroq(false);
+      setTestingMap(prev => ({ ...prev, [keyName]: false }));
     }
   };
 
-  // ── EXCLUIR CONEXÃO ──
-  const handleDeleteConnection = async (configKey, labelName) => {
-    if (!window.confirm(`Tem certeza que deseja EXCLUIR a conexão "${labelName}"?`)) return;
+  // ── EXCLUIR CONEXÃO (REMOVE DO BANCO, LOCALSTORAGE E DA LISTA) ──
+  const handleDeleteConnectionItem = async (item) => {
+    const keyName = item.keyName;
+    const labelName = item.name;
 
     try {
-      // Remove do Supabase app_config
+      // 1. Apaga do Supabase app_config
       const { error } = await supabase
         .from('app_config')
         .delete()
-        .eq('key', configKey);
+        .eq('key', keyName);
 
-      if (error) console.warn('[AdminPage] Erro ao deletar no Supabase:', error);
+      if (error) console.warn('[AdminPage] Erro ao deletar no Supabase:', error.message);
 
-      // Limpa os estados e o localStorage
-      if (configKey === 'wineapi_key') {
-        setWineApiKey('');
-        localStorage.removeItem('vinovision_wineapi_key');
-        setWineApiStatus({ state: 'idle', message: '' });
-      } else if (configKey === 'groq_api_key') {
-        setGroqKey('');
-        localStorage.removeItem('vinovision_groq_key');
-        setGroqStatus({ state: 'idle', message: '' });
-      }
+      // 2. Apaga do LocalStorage
+      if (keyName === 'wineapi_key') localStorage.removeItem('vinovision_wineapi_key');
+      if (keyName === 'groq_api_key') localStorage.removeItem('vinovision_groq_key');
 
-      showToast('success', `Conexão "${labelName}" excluída com sucesso!`);
+      // 3. REMOVE IMEDIATAMENTE DA LISTA DE EXIBIÇÃO DA TELA!
+      setConnectionsList(prev => prev.filter(c => c.keyName !== keyName));
+
+      showToast('success', `Conexão "${labelName}" excluída permanentemente!`);
     } catch (err) {
-      showToast('error', `Erro ao excluir conexão: ${err.message}`);
+      showToast('error', `Erro ao excluir: ${err.message}`);
     }
   };
 
@@ -292,33 +294,65 @@ export default function AdminPage() {
     e.preventDefault();
     const val = newConnKey.trim();
     if (!val) {
-      showToast('error', 'Por favor, informe a chave da API.');
+      showToast('error', 'Por favor, insira a chave da API.');
       return;
     }
 
-    let targetKey = 'custom_api_key';
-    if (newConnType === 'wineapi') targetKey = 'wineapi_key';
-    else if (newConnType === 'groq') targetKey = 'groq_api_key';
+    let targetKey = `custom_${Date.now()}`;
+    let connName = newConnName.trim() || 'Conexão Personalizada';
+    let connDesc = 'Integração de API adicionada pelo Admin';
+    let connBadge = 'Ativa';
+
+    if (newConnType === 'wineapi') {
+      targetKey = 'wineapi_key';
+      connName = 'wineAPI.io Integration';
+      connDesc = 'API especialista em reconhecimento visual e banco de dados global de vinhos (wineAPI.io)';
+      connBadge = 'Principal';
+      localStorage.setItem('vinovision_wineapi_key', val);
+    } else if (newConnType === 'groq') {
+      targetKey = 'groq_api_key';
+      connName = 'Groq AI Vision Integration';
+      connDesc = 'Visão computacional via modelos Llama 3.2 Vision (Motor secundário de IA)';
+      connBadge = 'Motor IA';
+      localStorage.setItem('vinovision_groq_key', val);
+    } else if (newConnType === 'gemini') {
+      targetKey = 'gemini_api_key';
+      connName = 'Google Gemini 2.0 Integration';
+      connDesc = 'Visão computacional via Google AI Studio';
+    } else if (newConnType === 'openai') {
+      targetKey = 'openai_api_key';
+      connName = 'OpenAI GPT-4o Integration';
+      connDesc = 'Visão computacional via OpenAI API';
+    }
+
+    const newConnObj = {
+      id: targetKey,
+      keyName: targetKey,
+      name: connName,
+      description: connDesc,
+      value: val,
+      badge: connBadge,
+      type: newConnType
+    };
 
     try {
-      if (newConnType === 'wineapi') {
-        setWineApiKey(val);
-        localStorage.setItem('vinovision_wineapi_key', val);
-      } else if (newConnType === 'groq') {
-        setGroqKey(val);
-        localStorage.setItem('vinovision_groq_key', val);
-      }
-
       await supabase
         .from('app_config')
         .upsert({ key: targetKey, value: val, updated_at: new Date().toISOString() });
 
-      showToast('success', `Conexão adicionada com sucesso!`);
+      // Atualiza a lista exibida na tela adicionando ou atualizando a conexão
+      setConnectionsList(prev => {
+        const filtered = prev.filter(c => c.keyName !== targetKey);
+        return [...filtered, newConnObj];
+      });
+
+      showToast('success', `Conexão "${connName}" adicionada com sucesso!`);
       setShowAddModal(false);
       setNewConnKey('');
       setNewConnName('');
     } catch (err) {
-      showToast('success', 'Conexão salva localmente no navegador!');
+      setConnectionsList(prev => [...prev.filter(c => c.keyName !== targetKey), newConnObj]);
+      showToast('success', `Conexão salva no navegador!`);
       setShowAddModal(false);
     }
   };
@@ -430,7 +464,7 @@ export default function AdminPage() {
             }}
           >
             <Plug style={{ width: 'var(--text-base)', height: 'var(--text-base)' }} />
-            Conexões & APIs
+            Conexões & APIs ({connectionsList.length})
           </button>
         </div>
       </div>
@@ -625,7 +659,7 @@ export default function AdminPage() {
       )}
 
       {/* ════════════════════════════════════════════════════════════════ */}
-      {/* ABA 2: CONEXÕES & CHAVES DE API                                    */}
+      {/* ABA 2: CONEXÕES & CHAVES DE API (DINÂMICO)                        */}
       {/* ════════════════════════════════════════════════════════════════ */}
       {activeAdminTab === 'connections' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
@@ -650,225 +684,150 @@ export default function AdminPage() {
             </button>
           </div>
 
-          {/* CARD WINEAPI.IO INTEGRATION (PRINCIPAL) */}
-          <div className="glass-card overflow-hidden" style={{ padding: 'var(--space-8)', display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
-            <div className="flex items-center justify-between" style={{ paddingBottom: 'var(--space-4)', borderBottom: '1px solid var(--border-clean)' }}>
-              <div className="flex items-center" style={{ gap: 'var(--space-4)' }}>
-                <div style={{ width: 'clamp(2.5rem,4vw,3rem)', height: 'clamp(2.5rem,4vw,3rem)', borderRadius: 'var(--radius-lg)', background: 'rgba(212,175,55,0.2)', border: '1px solid rgba(212,175,55,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                  <Wine style={{ width: 'var(--text-xl)', height: 'var(--text-xl)', color: 'var(--gold-accent)' }} />
-                </div>
-                <div>
-                  <div className="flex items-center" style={{ gap: 'var(--space-2)' }}>
-                    <h3 style={{ fontFamily: 'var(--font-heading)', fontSize: 'var(--text-2xl)', color: 'white' }}>wineAPI.io Integration</h3>
-                    <span style={{ fontSize: 'calc(var(--text-xs) * 0.85)', padding: '2px 8px', borderRadius: '99px', background: 'rgba(212,175,55,0.2)', color: 'var(--gold-light)', border: '1px solid rgba(212,175,55,0.3)', fontWeight: 700 }}>
-                      Principal
-                    </span>
+          {/* LISTAGEM DINÂMICA DE CONEXÕES ATIVAS */}
+          {loadingConnections ? (
+            <div style={{ padding: 'var(--space-12)', textAlign: 'center', color: 'var(--text-muted)' }}>
+              <div style={{ width: 'var(--text-3xl)', height: 'var(--text-3xl)', border: '2px solid var(--border-clean)', borderTopColor: 'var(--gold-accent)', borderRadius: '99px', animation: 'spin 0.8s linear infinite', margin: '0 auto var(--space-4)' }} />
+              Carregando conexões cadastradas…
+            </div>
+          ) : connectionsList.length === 0 ? (
+            <div className="glass-card" style={{ padding: 'var(--space-12)', textAlign: 'center', color: 'var(--text-muted)' }}>
+              <Server style={{ width: 'var(--text-3xl)', height: 'var(--text-3xl)', margin: '0 auto var(--space-3)', color: 'var(--gold-accent)' }} />
+              <h4 style={{ fontSize: 'var(--text-lg)', color: 'white', fontWeight: 600 }}>Nenhuma conexão de API cadastrada</h4>
+              <p style={{ fontSize: 'var(--text-sm)', marginTop: 'var(--space-1)' }}>Clique no botão <strong>"+ Adicionar Conexão"</strong> acima para configurar uma nova API.</p>
+            </div>
+          ) : (
+            connectionsList.map(item => {
+              const isShowingKey = !!showKeyMap[item.keyName];
+              const statusObj = statusMap[item.keyName] || { state: 'idle', message: '' };
+              const isTesting = !!testingMap[item.keyName];
+              const isSaving = !!savingMap[item.keyName];
+
+              return (
+                <div key={item.keyName} className="glass-card overflow-hidden animate-fadeIn" style={{ padding: 'var(--space-8)', display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
+                  
+                  {/* Cabeçalho do Card */}
+                  <div className="flex items-center justify-between" style={{ paddingBottom: 'var(--space-4)', borderBottom: '1px solid var(--border-clean)' }}>
+                    <div className="flex items-center" style={{ gap: 'var(--space-4)' }}>
+                      <div style={{ width: 'clamp(2.5rem,4vw,3rem)', height: 'clamp(2.5rem,4vw,3rem)', borderRadius: 'var(--radius-lg)', background: item.type === 'wineapi' ? 'rgba(212,175,55,0.2)' : 'rgba(128,14,38,0.4)', border: '1px solid rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                        {item.type === 'wineapi' ? <Wine style={{ width: 'var(--text-xl)', height: 'var(--text-xl)', color: 'var(--gold-accent)' }} /> : <Sparkles style={{ width: 'var(--text-xl)', height: 'var(--text-xl)', color: 'var(--gold-accent)' }} />}
+                      </div>
+                      <div>
+                        <div className="flex items-center" style={{ gap: 'var(--space-2)' }}>
+                          <h3 style={{ fontFamily: 'var(--font-heading)', fontSize: 'var(--text-2xl)', color: 'white' }}>{item.name}</h3>
+                          {item.badge && (
+                            <span style={{ fontSize: 'calc(var(--text-xs) * 0.85)', padding: '2px 8px', borderRadius: '99px', background: 'rgba(212,175,55,0.2)', color: 'var(--gold-light)', border: '1px solid rgba(212,175,55,0.3)', fontWeight: 700 }}>
+                              {item.badge}
+                            </span>
+                          )}
+                        </div>
+                        <p style={{ fontSize: 'var(--text-sm)', color: 'var(--text-muted)', marginTop: '2px' }}>
+                          {item.description}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Status + Botão Excluir na direita */}
+                    <div className="flex items-center" style={{ gap: 'var(--space-3)' }}>
+                      <span className="inline-flex items-center font-bold"
+                        style={{
+                          gap: 'var(--space-1)',
+                          padding: `var(--space-1) var(--space-3)`,
+                          borderRadius: '99px',
+                          fontSize: 'var(--text-xs)',
+                          background: item.value?.trim() ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)',
+                          border: `1px solid ${item.value?.trim() ? 'rgba(16, 185, 129, 0.3)' : 'rgba(239, 68, 68, 0.3)'}`,
+                          color: item.value?.trim() ? '#6ee7b7' : '#f87171'
+                        }}
+                      >
+                        {item.value?.trim() ? '🟢 Configurada' : '🔴 Sem Chave'}
+                      </span>
+
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteConnectionItem(item)}
+                        style={{ background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.3)', color: '#f87171', borderRadius: 'var(--radius-md)', padding: 'var(--space-2) var(--space-3)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 'var(--space-1)', fontSize: 'var(--text-xs)', fontWeight: 600, transition: 'all 0.2s' }}
+                        title={`Excluir conexão ${item.name}`}
+                        onMouseEnter={e => e.currentTarget.style.background = 'rgba(239,68,68,0.3)'}
+                        onMouseLeave={e => e.currentTarget.style.background = 'rgba(239,68,68,0.15)'}
+                      >
+                        <Trash2 style={{ width: 'var(--text-base)', height: 'var(--text-base)' }} />
+                        Excluir
+                      </button>
+                    </div>
                   </div>
-                  <p style={{ fontSize: 'var(--text-sm)', color: 'var(--text-muted)', marginTop: '2px' }}>
-                    API especialista em reconhecimento visual e banco global de vinhos (wineAPI.io)
-                  </p>
-                </div>
-              </div>
 
-              <div className="flex items-center" style={{ gap: 'var(--space-3)' }}>
-                {/* Status Badge */}
-                <span className="inline-flex items-center font-bold"
-                  style={{
-                    gap: 'var(--space-1)',
-                    padding: `var(--space-1) var(--space-3)`,
-                    borderRadius: '99px',
-                    fontSize: 'var(--text-xs)',
-                    background: wineApiKey.trim() ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)',
-                    border: `1px solid ${wineApiKey.trim() ? 'rgba(16, 185, 129, 0.3)' : 'rgba(239, 68, 68, 0.3)'}`,
-                    color: wineApiKey.trim() ? '#6ee7b7' : '#f87171'
-                  }}
-                >
-                  {wineApiKey.trim() ? '🟢 Chave Configurada' : '🔴 Não Configurado'}
-                </span>
+                  {/* Campo de Chave */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)', maxWidth: '40rem' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
+                      <label style={{ fontSize: 'var(--text-xs)', textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 700, color: 'var(--gold-accent)' }}>
+                        Chave da API / Token ({item.keyName})
+                      </label>
+                      
+                      <div style={{ position: 'relative' }}>
+                        <Key style={{ position: 'absolute', left: 'var(--space-3)', top: '50%', transform: 'translateY(-50%)', width: 'var(--text-base)', height: 'var(--text-base)', color: 'var(--gold-accent)', pointerEvents: 'none' }} />
+                        <input
+                          type={isShowingKey ? 'text' : 'password'}
+                          placeholder="Chave da API…"
+                          value={item.value || ''}
+                          onChange={e => handleKeyChangeInList(item.keyName, e.target.value)}
+                          style={{ width: '100%', background: 'rgba(11,5,8,0.9)', border: '1px solid var(--border-clean)', borderRadius: 'var(--radius-md)', paddingLeft: 'calc(var(--space-3) + var(--text-base) + var(--space-2))', paddingRight: 'calc(var(--space-3) + var(--text-xl))', paddingTop: 'var(--space-3)', paddingBottom: 'var(--space-3)', fontSize: 'var(--text-sm)', color: 'white', outline: 'none', transition: 'border-color 0.2s', fontFamily: isShowingKey ? 'monospace' : 'sans-serif' }}
+                          onFocus={e => e.target.style.borderColor = 'rgba(212,175,55,0.6)'}
+                          onBlur={e => e.target.style.borderColor = 'var(--border-clean)'}
+                        />
+                        <button type="button" onClick={() => toggleShowKey(item.keyName)}
+                          style={{ position: 'absolute', right: 'var(--space-3)', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', display: 'flex', alignItems: 'center' }}>
+                          {isShowingKey ? <EyeOff style={{ width: 'var(--text-base)', height: 'var(--text-base)' }} /> : <Eye style={{ width: 'var(--text-base)', height: 'var(--text-base)' }} />}
+                        </button>
+                      </div>
+                    </div>
 
-                {/* BOTÃO EXCLUIR WINEAPI */}
-                {wineApiKey.trim() && (
-                  <button
-                    type="button"
-                    onClick={() => handleDeleteConnection('wineapi_key', 'wineAPI.io')}
-                    style={{ background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.3)', color: '#f87171', borderRadius: 'var(--radius-md)', padding: 'var(--space-2)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', fontSize: 'var(--text-xs)', fontWeight: 600 }}
-                    title="Excluir Conexão wineAPI.io"
-                  >
-                    <Trash2 style={{ width: 'var(--text-base)', height: 'var(--text-base)' }} />
-                    Excluir
-                  </button>
-                )}
-              </div>
-            </div>
+                    {/* Status do Teste */}
+                    {statusObj.message && (
+                      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 'var(--space-2)', padding: 'var(--space-3)', borderRadius: 'var(--radius-md)', background: statusObj.state === 'error' ? 'rgba(239,68,68,0.12)' : statusObj.state === 'success' ? 'rgba(16,185,129,0.12)' : 'rgba(212,175,55,0.12)', border: `1px solid ${statusObj.state === 'error' ? 'rgba(239,68,68,0.3)' : statusObj.state === 'success' ? 'rgba(16,185,129,0.3)' : 'rgba(212,175,55,0.3)'}` }}>
+                        {statusObj.state === 'error' ? <AlertCircle style={{ width: 'var(--text-base)', height: 'var(--text-base)', color: '#f87171', flexShrink: 0, marginTop: '2px' }} /> : statusObj.state === 'success' ? <CheckCircle2 style={{ width: 'var(--text-base)', height: 'var(--text-base)', color: '#6ee7b7', flexShrink: 0, marginTop: '2px' }} /> : <RefreshCw style={{ width: 'var(--text-base)', height: 'var(--text-base)', color: 'var(--gold-light)', flexShrink: 0, marginTop: '2px', animation: 'spin 1s linear infinite' }} />}
+                        <p style={{ fontSize: 'var(--text-xs)', color: statusObj.state === 'error' ? '#f87171' : statusObj.state === 'success' ? '#6ee7b7' : 'var(--gold-light)', lineHeight: 1.6 }}>
+                          {statusObj.message}
+                        </p>
+                      </div>
+                    )}
 
-            {/* FORMULÁRIO WINEAPI.IO */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)', maxWidth: '40rem' }}>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
-                <label style={{ fontSize: 'var(--text-xs)', textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 700, color: 'var(--gold-accent)' }}>
-                  Chave de API wineAPI.io (X-API-Key)
-                </label>
-                
-                <div style={{ position: 'relative' }}>
-                  <Key style={{ position: 'absolute', left: 'var(--space-3)', top: '50%', transform: 'translateY(-50%)', width: 'var(--text-base)', height: 'var(--text-base)', color: 'var(--gold-accent)', pointerEvents: 'none' }} />
-                  <input
-                    type={showWineApiKey ? 'text' : 'password'}
-                    placeholder="Sua chave wineAPI.io…"
-                    value={wineApiKey}
-                    onChange={e => setWineApiKey(e.target.value)}
-                    style={{ width: '100%', background: 'rgba(11,5,8,0.9)', border: '1px solid var(--border-clean)', borderRadius: 'var(--radius-md)', paddingLeft: 'calc(var(--space-3) + var(--text-base) + var(--space-2))', paddingRight: 'calc(var(--space-3) + var(--text-xl))', paddingTop: 'var(--space-3)', paddingBottom: 'var(--space-3)', fontSize: 'var(--text-sm)', color: 'white', outline: 'none', transition: 'border-color 0.2s', fontFamily: showWineApiKey ? 'monospace' : 'sans-serif' }}
-                    onFocus={e => e.target.style.borderColor = 'rgba(212,175,55,0.6)'}
-                    onBlur={e => e.target.style.borderColor = 'var(--border-clean)'}
-                  />
-                  <button type="button" onClick={() => setShowWineApiKey(v => !v)}
-                    style={{ position: 'absolute', right: 'var(--space-3)', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', display: 'flex', alignItems: 'center' }}>
-                    {showWineApiKey ? <EyeOff style={{ width: 'var(--text-base)', height: 'var(--text-base)' }} /> : <Eye style={{ width: 'var(--text-base)', height: 'var(--text-base)' }} />}
-                  </button>
-                </div>
-                
-                <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>
-                  Gerencie sua chave em <a href="https://wineapi.io" target="_blank" rel="noreferrer" style={{ color: 'var(--gold-light)', textDecoration: 'underline' }}>wineapi.io</a> (Header: <code>X-API-Key</code>)
-                </p>
-              </div>
+                    {/* Botões de Ação */}
+                    <div className="flex items-center" style={{ gap: 'var(--space-3)', paddingTop: 'var(--space-2)' }}>
+                      <button
+                        type="button"
+                        onClick={() => handleTestConnectionItem(item)}
+                        disabled={isTesting}
+                        className="btn-ghost"
+                        style={{ gap: 'var(--space-2)' }}
+                      >
+                        <RefreshCw style={{ width: 'var(--text-base)', height: 'var(--text-base)', animation: isTesting ? 'spin 1s linear infinite' : 'none' }} />
+                        {isTesting ? 'Testando…' : 'Testar Conexão'}
+                      </button>
 
-              {/* Status do Teste */}
-              {wineApiStatus.message && (
-                <div style={{ display: 'flex', alignItems: 'flex-start', gap: 'var(--space-2)', padding: 'var(--space-3)', borderRadius: 'var(--radius-md)', background: wineApiStatus.state === 'error' ? 'rgba(239,68,68,0.12)' : wineApiStatus.state === 'success' ? 'rgba(16,185,129,0.12)' : 'rgba(212,175,55,0.12)', border: `1px solid ${wineApiStatus.state === 'error' ? 'rgba(239,68,68,0.3)' : wineApiStatus.state === 'success' ? 'rgba(16,185,129,0.3)' : 'rgba(212,175,55,0.3)'}` }}>
-                  {wineApiStatus.state === 'error' ? <AlertCircle style={{ width: 'var(--text-base)', height: 'var(--text-base)', color: '#f87171', flexShrink: 0, marginTop: '2px' }} /> : wineApiStatus.state === 'success' ? <CheckCircle2 style={{ width: 'var(--text-base)', height: 'var(--text-base)', color: '#6ee7b7', flexShrink: 0, marginTop: '2px' }} /> : <RefreshCw style={{ width: 'var(--text-base)', height: 'var(--text-base)', color: 'var(--gold-light)', flexShrink: 0, marginTop: '2px', animation: 'spin 1s linear infinite' }} />}
-                  <p style={{ fontSize: 'var(--text-xs)', color: wineApiStatus.state === 'error' ? '#f87171' : wineApiStatus.state === 'success' ? '#6ee7b7' : 'var(--gold-light)', lineHeight: 1.6 }}>
-                    {wineApiStatus.message}
-                  </p>
-                </div>
-              )}
-
-              {/* Botões */}
-              <div className="flex items-center" style={{ gap: 'var(--space-3)', paddingTop: 'var(--space-2)' }}>
-                <button
-                  type="button"
-                  onClick={handleTestWineAPI}
-                  disabled={testingWineApi}
-                  className="btn-ghost"
-                  style={{ gap: 'var(--space-2)' }}
-                >
-                  <RefreshCw style={{ width: 'var(--text-base)', height: 'var(--text-base)', animation: testingWineApi ? 'spin 1s linear infinite' : 'none' }} />
-                  {testingWineApi ? 'Testando…' : 'Testar Conexão'}
-                </button>
-
-                <button
-                  type="button"
-                  onClick={handleSaveWineAPI}
-                  disabled={savingWineApi}
-                  className="btn-gold"
-                  style={{ gap: 'var(--space-2)' }}
-                >
-                  <Save style={{ width: 'var(--text-base)', height: 'var(--text-base)' }} />
-                  {savingWineApi ? 'Salvando…' : 'Salvar Configuração'}
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {/* CARD GROQ AI VISION INTEGRATION (SECUNDÁRIO / FALLBACK) */}
-          <div className="glass-card overflow-hidden" style={{ padding: 'var(--space-8)', display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
-            <div className="flex items-center justify-between" style={{ paddingBottom: 'var(--space-4)', borderBottom: '1px solid var(--border-clean)' }}>
-              <div className="flex items-center" style={{ gap: 'var(--space-4)' }}>
-                <div style={{ width: 'clamp(2.5rem,4vw,3rem)', height: 'clamp(2.5rem,4vw,3rem)', borderRadius: 'var(--radius-lg)', background: 'rgba(128,14,38,0.4)', border: '1px solid rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyCenter: 'center', flexShrink: 0 }}>
-                  <Sparkles style={{ width: 'var(--text-xl)', height: 'var(--text-xl)', color: 'var(--gold-accent)' }} />
-                </div>
-                <div>
-                  <div className="flex items-center" style={{ gap: 'var(--space-2)' }}>
-                    <h3 style={{ fontFamily: 'var(--font-heading)', fontSize: 'var(--text-2xl)', color: 'white' }}>Groq AI Vision Integration</h3>
-                    <span style={{ fontSize: 'calc(var(--text-xs) * 0.85)', padding: '2px 8px', borderRadius: '99px', background: 'rgba(255,255,255,0.08)', color: 'var(--text-muted)', border: '1px solid var(--border-clean)', fontWeight: 600 }}>
-                      Motor Secundário / Fallback
-                    </span>
+                      <button
+                        type="button"
+                        onClick={() => handleSaveConnectionItem(item)}
+                        disabled={isSaving}
+                        className="btn-gold"
+                        style={{ gap: 'var(--space-2)' }}
+                      >
+                        <Save style={{ width: 'var(--text-base)', height: 'var(--text-base)' }} />
+                        {isSaving ? 'Salvando…' : 'Salvar Alterações'}
+                      </button>
+                    </div>
                   </div>
-                  <p style={{ fontSize: 'var(--text-sm)', color: 'var(--text-muted)', marginTop: '2px' }}>
-                    Chave Groq Llama 3.2 Vision para visão computacional de rótulos
-                  </p>
+
                 </div>
-              </div>
+              );
+            })
+          )}
 
-              <div className="flex items-center" style={{ gap: 'var(--space-3)' }}>
-                <span className="inline-flex items-center font-bold"
-                  style={{
-                    gap: 'var(--space-1)',
-                    padding: `var(--space-1) var(--space-3)`,
-                    borderRadius: '99px',
-                    fontSize: 'var(--text-xs)',
-                    background: groqKey.trim() ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)',
-                    border: `1px solid ${groqKey.trim() ? 'rgba(16, 185, 129, 0.3)' : 'rgba(239, 68, 68, 0.3)'}`,
-                    color: groqKey.trim() ? '#6ee7b7' : '#f87171'
-                  }}
-                >
-                  {groqKey.trim() ? '🟢 Chave Configurada' : '🔴 Não Configurado'}
-                </span>
-
-                {/* BOTÃO EXCLUIR GROQ */}
-                {groqKey.trim() && (
-                  <button
-                    type="button"
-                    onClick={() => handleDeleteConnection('groq_api_key', 'Groq AI Vision')}
-                    style={{ background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.3)', color: '#f87171', borderRadius: 'var(--radius-md)', padding: 'var(--space-2)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', fontSize: 'var(--text-xs)', fontWeight: 600 }}
-                    title="Excluir Conexão Groq AI"
-                  >
-                    <Trash2 style={{ width: 'var(--text-base)', height: 'var(--text-base)' }} />
-                    Excluir
-                  </button>
-                )}
-              </div>
-            </div>
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)', maxWidth: '40rem' }}>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
-                <label style={{ fontSize: 'var(--text-xs)', textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 700, color: 'var(--gold-accent)' }}>
-                  Chave da API Groq (gsk_…)
-                </label>
-                
-                <div style={{ position: 'relative' }}>
-                  <Key style={{ position: 'absolute', left: 'var(--space-3)', top: '50%', transform: 'translateY(-50%)', width: 'var(--text-base)', height: 'var(--text-base)', color: 'var(--gold-accent)', pointerEvents: 'none' }} />
-                  <input
-                    type={showGroqKey ? 'text' : 'password'}
-                    placeholder="gsk_…"
-                    value={groqKey}
-                    onChange={e => setGroqKey(e.target.value)}
-                    style={{ width: '100%', background: 'rgba(11,5,8,0.9)', border: '1px solid var(--border-clean)', borderRadius: 'var(--radius-md)', paddingLeft: 'calc(var(--space-3) + var(--text-base) + var(--space-2))', paddingRight: 'calc(var(--space-3) + var(--text-xl))', paddingTop: 'var(--space-3)', paddingBottom: 'var(--space-3)', fontSize: 'var(--text-sm)', color: 'white', outline: 'none', transition: 'border-color 0.2s', fontFamily: showGroqKey ? 'monospace' : 'sans-serif' }}
-                    onFocus={e => e.target.style.borderColor = 'rgba(212,175,55,0.6)'}
-                    onBlur={e => e.target.style.borderColor = 'var(--border-clean)'}
-                  />
-                  <button type="button" onClick={() => setShowGroqKey(v => !v)}
-                    style={{ position: 'absolute', right: 'var(--space-3)', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', display: 'flex', alignItems: 'center' }}>
-                    {showGroqKey ? <EyeOff style={{ width: 'var(--text-base)', height: 'var(--text-base)' }} /> : <Eye style={{ width: 'var(--text-base)', height: 'var(--text-base)' }} />}
-                  </button>
-                </div>
-              </div>
-
-              {groqStatus.message && (
-                <div style={{ display: 'flex', alignItems: 'flex-start', gap: 'var(--space-2)', padding: 'var(--space-3)', borderRadius: 'var(--radius-md)', background: groqStatus.state === 'error' ? 'rgba(239,68,68,0.12)' : groqStatus.state === 'success' ? 'rgba(16,185,129,0.12)' : 'rgba(212,175,55,0.12)', border: `1px solid ${groqStatus.state === 'error' ? 'rgba(239,68,68,0.3)' : groqStatus.state === 'success' ? 'rgba(16,185,129,0.3)' : 'rgba(212,175,55,0.3)'}` }}>
-                  {groqStatus.state === 'error' ? <AlertCircle style={{ width: 'var(--text-base)', height: 'var(--text-base)', color: '#f87171', flexShrink: 0, marginTop: '2px' }} /> : groqStatus.state === 'success' ? <CheckCircle2 style={{ width: 'var(--text-base)', height: 'var(--text-base)', color: '#6ee7b7', flexShrink: 0, marginTop: '2px' }} /> : <RefreshCw style={{ width: 'var(--text-base)', height: 'var(--text-base)', color: 'var(--gold-light)', flexShrink: 0, marginTop: '2px', animation: 'spin 1s linear infinite' }} />}
-                  <p style={{ fontSize: 'var(--text-xs)', color: groqStatus.state === 'error' ? '#f87171' : groqStatus.state === 'success' ? '#6ee7b7' : 'var(--gold-light)', lineHeight: 1.6 }}>
-                    {groqStatus.message}
-                  </p>
-                </div>
-              )}
-
-              <div className="flex items-center" style={{ gap: 'var(--space-3)', paddingTop: 'var(--space-2)' }}>
-                <button type="button" onClick={handleTestGroq} disabled={testingGroq} className="btn-ghost" style={{ gap: 'var(--space-2)' }}>
-                  <RefreshCw style={{ width: 'var(--text-base)', height: 'var(--text-base)', animation: testingGroq ? 'spin 1s linear infinite' : 'none' }} />
-                  {testingGroq ? 'Testando…' : 'Testar Conexão'}
-                </button>
-
-                <button type="button" onClick={handleSaveGroq} disabled={savingGroq} className="btn-gold" style={{ gap: 'var(--space-2)' }}>
-                  <Save style={{ width: 'var(--text-base)', height: 'var(--text-base)' }} />
-                  {savingGroq ? 'Salvando…' : 'Salvar Configuração'}
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {/* CARD SUPABASE */}
+          {/* CARD SUPABASE BANCO DE DADOS */}
           <div className="glass-card overflow-hidden" style={{ padding: 'var(--space-8)', display: 'flex', flexDirection: 'column', gap: 'var(--space-5)' }}>
             <div className="flex items-center justify-between" style={{ paddingBottom: 'var(--space-4)', borderBottom: '1px solid var(--border-clean)' }}>
               <div className="flex items-center" style={{ gap: 'var(--space-4)' }}>
-                <div style={{ width: 'clamp(2.5rem,4vw,3rem)', height: 'clamp(2.5rem,4vw,3rem)', borderRadius: 'var(--radius-lg)', background: 'rgba(16,185,129,0.2)', border: '1px solid rgba(16,185,129,0.3)', display: 'flex', alignItems: 'center', justifyCenter: 'center', flexShrink: 0 }}>
+                <div style={{ width: 'clamp(2.5rem,4vw,3rem)', height: 'clamp(2.5rem,4vw,3rem)', borderRadius: 'var(--radius-lg)', background: 'rgba(16,185,129,0.2)', border: '1px solid rgba(16,185,129,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                   <Database style={{ width: 'var(--text-xl)', height: 'var(--text-xl)', color: '#6ee7b7' }} />
                 </div>
                 <div>
@@ -921,9 +880,25 @@ export default function AdminPage() {
                 >
                   <option value="wineapi">wineAPI.io (Reconhecimento Visual & Base de Vinhos)</option>
                   <option value="groq">Groq AI Vision (Llama 3.2 Vision)</option>
+                  <option value="gemini">Google Gemini 2.0 (AI Studio)</option>
+                  <option value="openai">OpenAI GPT-4o (Vision API)</option>
                   <option value="custom">Outra API Personalizada (Custom)</option>
                 </select>
               </div>
+
+              {newConnType === 'custom' && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
+                  <label style={{ fontSize: 'var(--text-xs)', textTransform: 'uppercase', fontWeight: 700, color: 'var(--gold-accent)' }}>Nome do Serviço</label>
+                  <input
+                    type="text"
+                    placeholder="Ex: Minha API de Vinhos"
+                    value={newConnName}
+                    onChange={e => setNewConnName(e.target.value)}
+                    required
+                    style={{ background: 'rgba(11,5,8,0.9)', border: '1px solid var(--border-clean)', borderRadius: 'var(--radius-md)', padding: 'var(--space-3)', fontSize: 'var(--text-sm)', color: 'white', outline: 'none' }}
+                  />
+                </div>
+              )}
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
                 <label style={{ fontSize: 'var(--text-xs)', textTransform: 'uppercase', fontWeight: 700, color: 'var(--gold-accent)' }}>Chave de API / Token</label>
