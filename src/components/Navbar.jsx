@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
-import { Wine, Camera, Bookmark, Sparkles, Compass, LogOut, User } from 'lucide-react';
+import { Wine, Camera, Bookmark, Sparkles, Compass, LogOut, ShieldCheck, Crown } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
 export default function Navbar({ activeTab, setActiveTab, cellarCount }) {
-  const { user, signOut } = useAuth();
+  const { user, role, isAdmin, isPremium, signOut } = useAuth();
   const [showUserMenu, setShowUserMenu] = useState(false);
 
   const NAV = [
@@ -12,11 +12,31 @@ export default function Navbar({ activeTab, setActiveTab, cellarCount }) {
     { id: 'cellar',  Icon: Bookmark, label: 'Adega'      },
   ];
 
+  // Adiciona a guia Admin se for administrador
+  if (isAdmin) {
+    NAV.push({ id: 'admin', Icon: ShieldCheck, label: 'Painel Admin' });
+  }
+
   // Pega as iniciais do e-mail para o avatar
   const initials = user?.email?.substring(0, 2).toUpperCase() || 'VV';
   const emailShort = user?.email?.length > 24
     ? user.email.substring(0, 22) + '…'
     : user?.email;
+
+  // Estilo da badge da role
+  const getRoleBadge = () => {
+    switch (role) {
+      case 'ADMIN':
+        return { label: 'ADMIN', color: '#f3e5ab', bg: 'rgba(212,175,55,0.2)', border: 'rgba(212,175,55,0.4)', Icon: ShieldCheck };
+      case 'USER_PREMIUM':
+        return { label: 'PREMIUM', color: '#6ee7b7', bg: 'rgba(16,185,129,0.2)', border: 'rgba(16,185,129,0.4)', Icon: Crown };
+      default:
+        return { label: 'COMMUM', color: 'var(--text-muted)', bg: 'rgba(255,255,255,0.06)', border: 'var(--border-clean)', Icon: null };
+    }
+  };
+
+  const roleBadge = getRoleBadge();
+  const RoleBadgeIcon = roleBadge.Icon;
 
   return (
     <>
@@ -25,7 +45,7 @@ export default function Navbar({ activeTab, setActiveTab, cellarCount }) {
 
           {/* ── LOGO ── */}
           <div onClick={() => setActiveTab('scanner')} className="flex items-center" style={{ gap: 'var(--space-3)', cursor: 'pointer' }}>
-            <div style={{ width: 'clamp(2rem,3.5vw,2.5rem)', height: 'clamp(2rem,3.5vw,2.5rem)', borderRadius: 'var(--radius-md)', background: 'linear-gradient(135deg, #800e26, #3b0911)', border: '1px solid rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <div style={{ width: 'clamp(2rem,3.5vw,2.5rem)', height: 'clamp(2rem,3.5vw,2.5rem)', borderRadius: 'var(--radius-md)', background: 'linear-gradient(135deg, #800e26, #3b0911)', border: '1px solid rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyCenter: 'center', flexShrink: 0 }}>
               <Wine style={{ width: 'var(--text-lg)', height: 'var(--text-lg)', color: 'var(--gold-light)' }} />
             </div>
             <div>
@@ -63,11 +83,29 @@ export default function Navbar({ activeTab, setActiveTab, cellarCount }) {
               Escanear
             </button>
 
-            {/* Avatar do usuário */}
+            {/* Avatar do usuário com borda da role */}
             <div style={{ position: 'relative' }}>
               <button
                 onClick={() => setShowUserMenu(v => !v)}
-                style={{ width: 'clamp(2rem,3.5vw,2.5rem)', height: 'clamp(2rem,3.5vw,2.5rem)', borderRadius: '99px', background: 'linear-gradient(135deg, #800e26, #d4af37)', border: '1px solid rgba(255,255,255,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontWeight: 700, fontSize: 'var(--text-xs)', color: 'white', flexShrink: 0 }}
+                style={{
+                  width: 'clamp(2.2rem,3.8vw,2.6rem)',
+                  height: 'clamp(2.2rem,3.8vw,2.6rem)',
+                  borderRadius: '99px',
+                  background: isAdmin
+                    ? 'linear-gradient(135deg, #d4af37, #800e26)'
+                    : isPremium
+                    ? 'linear-gradient(135deg, #10b981, #065f46)'
+                    : 'linear-gradient(135deg, #3b0911, #800e26)',
+                  border: `2px solid ${roleBadge.color}`,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer',
+                  fontWeight: 700,
+                  fontSize: 'var(--text-xs)',
+                  color: 'white',
+                  flexShrink: 0
+                }}
                 title={user?.email}
               >
                 {initials}
@@ -75,7 +113,7 @@ export default function Navbar({ activeTab, setActiveTab, cellarCount }) {
 
               {/* Dropdown do usuário */}
               {showUserMenu && (
-                <div className="glass-card animate-fadeIn" style={{ position: 'absolute', top: 'calc(100% + var(--space-2))', right: 0, minWidth: '14rem', padding: 'var(--space-4)', display: 'flex', flexDirection: 'column', gap: 'var(--space-3)', zIndex: 100 }}>
+                <div className="glass-card animate-fadeIn" style={{ position: 'absolute', top: 'calc(100% + var(--space-2))', right: 0, minWidth: '15rem', padding: 'var(--space-4)', display: 'flex', flexDirection: 'column', gap: 'var(--space-3)', zIndex: 100 }}>
                   {/* Info usuário */}
                   <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', paddingBottom: 'var(--space-3)', borderBottom: '1px solid var(--border-clean)' }}>
                     <div style={{ width: 'var(--text-2xl)', height: 'var(--text-2xl)', borderRadius: '99px', background: 'linear-gradient(135deg, #800e26, #d4af37)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 'var(--text-xs)', color: 'white', flexShrink: 0 }}>
@@ -83,7 +121,12 @@ export default function Navbar({ activeTab, setActiveTab, cellarCount }) {
                     </div>
                     <div style={{ minWidth: 0 }}>
                       <p style={{ fontSize: 'var(--text-xs)', fontWeight: 700, color: 'white', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{emailShort}</p>
-                      <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>Conta ativa</p>
+                      
+                      {/* Badge da Role no perfil */}
+                      <span className="inline-flex items-center" style={{ gap: '4px', padding: '2px 8px', borderRadius: '99px', fontSize: 'calc(var(--text-xs) * 0.85)', fontWeight: 700, background: roleBadge.bg, border: `1px solid ${roleBadge.border}`, color: roleBadge.color, marginTop: '2px' }}>
+                        {RoleBadgeIcon && <RoleBadgeIcon style={{ width: '10px', height: '10px' }} />}
+                        {roleBadge.label}
+                      </span>
                     </div>
                   </div>
 
@@ -92,6 +135,18 @@ export default function Navbar({ activeTab, setActiveTab, cellarCount }) {
                     <Bookmark style={{ width: 'var(--text-base)', height: 'var(--text-base)', color: 'var(--gold-accent)' }} />
                     {cellarCount} vinho{cellarCount !== 1 ? 's' : ''} na adega
                   </div>
+
+                  {/* Atalho Painel Admin para ADMIN */}
+                  {isAdmin && (
+                    <button
+                      onClick={() => { setActiveTab('admin'); setShowUserMenu(false); }}
+                      className="flex items-center"
+                      style={{ gap: 'var(--space-2)', padding: `var(--space-2) var(--space-3)`, borderRadius: 'var(--radius-md)', fontSize: 'var(--text-sm)', fontWeight: 600, background: 'rgba(212, 175, 55, 0.15)', border: '1px solid rgba(212, 175, 55, 0.3)', color: 'var(--gold-light)', cursor: 'pointer' }}
+                    >
+                      <ShieldCheck style={{ width: 'var(--text-base)', height: 'var(--text-base)', color: 'var(--gold-accent)' }} />
+                      Painel Administrativo
+                    </button>
+                  )}
 
                   {/* Sair */}
                   <button
@@ -111,7 +166,7 @@ export default function Navbar({ activeTab, setActiveTab, cellarCount }) {
         </div>
 
         {/* ── NAV MOBILE ── */}
-        <div className="flex sm:hidden justify-around" style={{ marginTop: 'var(--space-3)', paddingTop: 'var(--space-3)', borderTop: '1px solid var(--border-clean)' }}>
+        <div className="flex sm:hidden justify-around flex-wrap" style={{ marginTop: 'var(--space-3)', paddingTop: 'var(--space-3)', borderTop: '1px solid var(--border-clean)', gap: 'var(--space-1)' }}>
           {NAV.map(({ id, Icon, label }) => (
             <button key={id} onClick={() => setActiveTab(id)} className="flex items-center font-semibold"
               style={{ gap: 'var(--space-1)', padding: `var(--space-1) var(--space-3)`, borderRadius: '99px', fontSize: 'var(--text-xs)', border: 'none', cursor: 'pointer', background: activeTab === id ? 'var(--wine-primary)' : 'transparent', color: activeTab === id ? 'var(--gold-light)' : 'var(--text-muted)' }}

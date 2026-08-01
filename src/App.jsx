@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import Navbar from './components/Navbar';
 import Scanner from './components/Scanner';
@@ -7,6 +7,8 @@ import WineDetails from './components/WineDetails';
 import SampleGallery from './components/SampleGallery';
 import Cellar from './components/Cellar';
 import LoginPage from './pages/LoginPage';
+import AdminPage from './pages/AdminPage';
+import RoleGuard from './components/RoleGuard';
 import { useCellar } from './hooks/useCellar';
 import { scanWineLabel } from './utils/aiScanner';
 
@@ -81,6 +83,11 @@ function AppInner() {
             onRemoveWine={removeWine}
             onScanNew={() => setActiveTab('scanner')}
           />
+        )}
+        {activeTab === 'admin' && (
+          <RoleGuard allowedRoles={['ADMIN']} onFallback={() => setActiveTab('scanner')}>
+            <AdminPage />
+          </RoleGuard>
         )}
       </main>
 

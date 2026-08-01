@@ -5,22 +5,64 @@ const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
   const [user, setUser]       = useState(null);
+  const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
+
+  // Carrega perfil do usuário da tabela public.profiles
+  const fetchProfile = async (userId) => {
+    if (!userId) {
+      setProfile(null);
+      return;
+    }
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .single();
+      
+      if (error) {
+        console.error('[AuthContext] Erro ao buscar perfil:', error.message);
+        setProfile({ role: 'USER_COMMON' });
+      } else {
+        setProfile(data);
+      }
+    } catch (err) {
+      console.error('[AuthContext] Erro inesperado ao buscar perfil:', err);
+      setProfile({ role: 'USER_COMMON' });
+    }
+  };
 
   useEffect(() => {
     // Carrega a sessão já existente ao iniciar
     supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null);
-      setLoading(false);
+      const currentUser = session?.user ?? null;
+      setUser(currentUser);
+      if (currentUser) {
+        fetchProfile(currentUser.id).finally(() => setLoading(false));
+      } else {
+        setLoading(false);
+      }
     });
 
     // Escuta mudanças de autenticação (login, logout, refresh)
     const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null);
+      const currentUser = session?.user ?? null;
+      setUser(currentUser);
+      if (currentUser) {
+        fetchProfile(currentUser.id);
+      } else {
+        setProfile(null);
+      }
     });
 
     return () => listener.subscription.unsubscribe();
   }, []);
+
+  // Recarrega o perfil manualmente se necessário
+  const refreshProfile = async () => {
+    if (user) await fetchProfile(user.id);
+  };
 
   // ── Métodos de Autenticação ──────────────────────────────────────────
 
@@ -52,6 +94,8 @@ export function AuthProvider({ children }) {
 
   const signOut = async () => {
     await supabase.auth.signOut();
+    setUser(null);
+    setProfile(null);
   };
 
   const resetPassword = async (email) => {
@@ -61,8 +105,25 @@ export function AuthProvider({ children }) {
     return { data, error };
   };
 
+  const role = profile?.role || 'USER_COMMON';
+  const isAdmin = role === 'ADMIN';
+  const isPremium = role === 'USER_PREMIUM' || role === 'ADMIN';
+
   return (
-    <AuthContext.Provider value={{ user, loading, signUpWithEmail, signInWithEmail, signInWithGoogle, signOut, resetPassword }}>
+    <AuthContext.Provider value={{
+      user,
+      profile,
+      role,
+      isAdmin,
+      isPremium,
+      loading,
+      refreshProfile,
+      signUpWithEmail,
+      signInWithEmail,
+      signInWithGoogle,
+      signOut,
+      resetPassword
+    }}>
       {children}
     </AuthContext.Provider>
   );
