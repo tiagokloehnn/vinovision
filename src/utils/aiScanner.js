@@ -48,17 +48,14 @@ export async function scanWineLabel(imageInput, onProgress = () => {}) {
     }
   }
 
-  // Se houver chave Groq e a imagem for arquivo ou base64 → Executa IA REAL com compressão prévia
+  // Se houver chave Groq e a imagem for arquivo ou base64 → Executa IA REAL
   if (groqApiKey && (imageInput instanceof File || (typeof imageInput === 'string' && imageInput.startsWith('data:image')))) {
     try {
-      onProgress({ stage: 'init', percent: 20, text: 'Otimizando e comprimindo imagem da foto…' });
+      onProgress({ stage: 'init', percent: 20, text: 'Otimizando e comprimindo foto do rótulo…' });
       const optimizedBase64 = await compressImageForVision(imageInput, 1024, 1024, 0.85);
 
-      onProgress({ stage: 'ai_vision', percent: 50, text: 'Conectando ao Sommelier IA…' });
-      const selectedModel = await getAvailableGroqVisionModel(groqApiKey);
-
-      onProgress({ stage: 'ai_vision', percent: 75, text: 'Analisando rótulo e aroma do vinho…' });
-      const result = await analyzeWineWithGroq(optimizedBase64, groqApiKey, selectedModel, onProgress);
+      onProgress({ stage: 'ai_vision', percent: 60, text: 'Analisando rótulo com Groq Llama 3.2 Vision…' });
+      const result = await analyzeWineWithGroq(optimizedBase64, groqApiKey, onProgress);
       
       onProgress({ stage: 'done', percent: 100, text: 'Vinho analisado com sucesso!' });
       return result;
@@ -71,7 +68,7 @@ export async function scanWineLabel(imageInput, onProgress = () => {}) {
   // Se NÃO houver chave configurada pelo Admin
   if (!groqApiKey) {
     throw new Error(
-      'Serviço de Sommelier IA em manutenção no momento.\n\nPor favor, tente novamente mais tarde.'
+      'Serviço de Sommelier IA não configurado no momento.\n\nConfigure a chave da API Groq no Painel Admin → Conexões.'
     );
   }
 
@@ -79,47 +76,18 @@ export async function scanWineLabel(imageInput, onProgress = () => {}) {
 }
 
 /**
- * Consulta a API da Groq para descobrir os modelos disponíveis
+ * Envia a imagem otimizada para a API da Groq usando o modelo Llama 3.2 Vision
  */
-async function getAvailableGroqVisionModel(apiKey) {
-  let availableList = [];
-  try {
-    const res = await fetch('https://api.groq.com/openai/v1/models', {
-      headers: { 'Authorization': `Bearer ${apiKey.trim()}` }
-    });
-
-    if (res.ok) {
-      const data = await res.json();
-      availableList = (data.data || []).map(m => m.id);
-
-      const visionModel = availableList.find(m => 
-        m.toLowerCase().includes('vision') || 
-        m.toLowerCase().includes('multimodal') || 
-        m.toLowerCase().includes('llava')
-      );
-
-      if (visionModel) return visionModel;
-    }
-  } catch (e) {
-    console.warn('[VinoVision IA] Erro ao listar modelos:', e);
-  }
-
-  return 'llama-3.2-11b-vision-preview';
-}
-
-/**
- * Envia a imagem otimizada para a API
- */
-async function analyzeWineWithGroq(base64DataUrl, apiKey, initialModelName, onProgress) {
+async function analyzeWineWithGroq(base64DataUrl, apiKey, onProgress) {
+  // Lista de modelos de visão oficiais da Groq em ordem de precisão
   const candidateModels = [
-    initialModelName,
-    'llama-3.2-11b-vision-preview',
-    'llama-3.2-90b-vision-preview'
-  ].filter((v, i, a) => a.indexOf(v) === i);
+    'llama-3.2-90b-vision-preview',
+    'llama-3.2-11b-vision-preview'
+  ];
 
   const promptText = `Você é um mestre sommelier e especialista em visão computacional de vinhos.
 Examine cuidadosamente esta foto de rótulo de vinho e extraia/identifique as informações reais contidas na imagem.
-Retorne EXCLUSIVAMENTE um objeto JSON válido (sem qualquer texto adicional antes ou depois) com exatamente esta estrutura em português:
+Retorne EXCLUSIVAMENTE um objeto JSON válido no seguinte formato em português:
 
 {
   "name": "Nome exato do vinho conforme o rótulo",
@@ -155,12 +123,14 @@ Retorne EXCLUSIVAMENTE um objeto JSON válido (sem qualquer texto adicional ante
 }
 
 Nota de perfil: body (1-5), tannin (1-5), acidity (1-5), sweetness (1-5).
-Se alguma informação não estiver 100% visível, faça uma inferência de sommelier altamente precisa baseada na vinícola e no tipo de vinho identificado no rótulo.`;
+Se alguma informação não estiver visível na foto, preencha com uma inferência de sommelier altamente precisa baseada na vinícola e no tipo de vinho identificado.`;
 
   let lastError = null;
 
   for (const modelName of candidateModels) {
     try {
+      console.log(`[VinoVision IA] Enviando requisição para Groq (Modelo: ${modelName})…`);
+      
       const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
         method: 'POST',
         headers: {
@@ -169,6 +139,7 @@ Se alguma informação não estiver 100% visível, faça uma inferência de somm
         },
         body: JSON.stringify({
           model: modelName,
+          response_format: { type: 'json_object' },
           messages: [
             {
               role: 'user',
@@ -190,16 +161,19 @@ Se alguma informação não estiver 100% visível, faça uma inferência de somm
         const errJson = await response.json().catch(() => ({}));
         const errMsg = errJson.error?.message || `HTTP ${response.status} ${response.statusText}`;
 
+        console.warn(`[VinoVision IA] Groq respondeu com erro no modelo ${modelName}:`, errMsg);
+
         if (response.status === 401) {
-          throw new Error('Serviço de Sommelier IA em manutenção (Credencial inválida).');
+          throw new Error('Chave da API Groq inválida. Verifique a chave configurada no Painel Admin.');
         }
 
-        if (response.status === 404 || response.status === 400 || errMsg.toLowerCase().includes('does not exist')) {
+        // Se o modelo não estiver acessível, tenta o próximo modelo da lista
+        if (response.status === 404 || response.status === 400 || errMsg.toLowerCase().includes('does not exist') || errMsg.toLowerCase().includes('access')) {
           lastError = new Error(errMsg);
           continue;
         }
 
-        throw new Error(`Falha no serviço de IA (${modelName}): ${errMsg}`);
+        throw new Error(`Erro na API Groq (${modelName}): ${errMsg}`);
       }
 
       const data = await response.json();
@@ -227,16 +201,16 @@ Se alguma informação não estiver 100% visível, faça uma inferência de somm
         image: base64DataUrl,
         labelThumbnail: base64DataUrl,
         scannedAt: new Date().toISOString(),
-        aiProvider: `Groq AI (${modelName})`
+        aiProvider: `Groq Vision (${modelName})`
       };
 
     } catch (err) {
-      if (err.message.includes('Serviço de Sommelier IA em manutenção')) throw err;
+      if (err.message.includes('Chave da API Groq inválida')) throw err;
       lastError = err;
     }
   }
 
-  throw new Error('Serviço de Sommelier IA temporariamente indisponível.');
+  throw new Error(`Falha ao acessar os modelos de Visão da Groq: ${lastError?.message || 'Verifique se os modelos Llama 3.2 Vision estão ativos na sua conta no console.groq.com.'}`);
 }
 
 /**
