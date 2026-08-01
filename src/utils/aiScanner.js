@@ -2,65 +2,55 @@ import { SAMPLE_WINES } from '../data/sampleWines';
 import { supabase } from '../lib/supabase';
 
 /**
- * Busca a chave da API wineAPI.io (X-API-Key)
+ * Busca TODAS as chaves de API ativas configuradas no banco de dados Supabase (app_config),
+ * localStorage ou variáveis de ambiente.
  */
-export async function getWineApiKey() {
-  // Se foi marcada como deletada pelo Admin, não utiliza
-  if (localStorage.getItem('vinovision_wineapi_key_deleted') === 'true') {
-    return '';
-  }
+export async function getAllActiveApiKeys() {
+  const activeKeys = [];
 
+  // 1. Busca todas as configurações salvas na tabela app_config do Supabase
   try {
     const { data } = await supabase
       .from('app_config')
-      .select('value')
-      .eq('key', 'wineapi_key')
-      .maybeSingle();
+      .select('key, value');
 
-    if (data?.value && data.value.trim()) {
-      return data.value.trim();
+    if (data && data.length > 0) {
+      data.forEach(item => {
+        if (item.value && item.value.trim()) {
+          activeKeys.push({
+            keyName: item.key,
+            value: item.value.trim()
+          });
+        }
+      });
     }
-  } catch (e) {}
-
-  const localKey = (localStorage.getItem('vinovision_wineapi_key') || '').trim();
-  if (localKey) return localKey;
-
-  return (import.meta.env.VITE_WINEAPI_KEY || '').trim();
-}
-
-/**
- * Busca a chave de API da Groq (fallback)
- */
-export async function getGroqApiKey() {
-  // Se foi marcada como deletada pelo Admin, não utiliza
-  if (localStorage.getItem('vinovision_groq_key_deleted') === 'true') {
-    return '';
+  } catch (e) {
+    // ignora se a tabela ainda não existir
   }
 
-  try {
-    const { data } = await supabase
-      .from('app_config')
-      .select('value')
-      .eq('key', 'groq_api_key')
-      .maybeSingle();
+  // 2. Adiciona chaves salvas localmente caso não tenham sido deletadas
+  const wineDeleted = localStorage.getItem('vinovision_wineapi_key_deleted') === 'true';
+  const groqDeleted = localStorage.getItem('vinovision_groq_key_deleted') === 'true';
 
-    if (data?.value && data.value.trim()) {
-      return data.value.trim();
-    }
-  } catch (e) {}
+  const wineLocal = (localStorage.getItem('vinovision_wineapi_key') || import.meta.env.VITE_WINEAPI_KEY || '').trim();
+  const groqLocal = (localStorage.getItem('vinovision_groq_key') || import.meta.env.VITE_GROQ_API_KEY || '').trim();
 
-  const localKey = (localStorage.getItem('vinovision_groq_key') || '').trim();
-  if (localKey) return localKey;
+  if (wineLocal && !wineDeleted && !activeKeys.some(k => k.keyName === 'wineapi_key')) {
+    activeKeys.push({ keyName: 'wineapi_key', value: wineLocal });
+  }
 
-  return (import.meta.env.VITE_GROQ_API_KEY || '').trim();
+  if (groqLocal && !groqDeleted && !activeKeys.some(k => k.keyName === 'groq_api_key')) {
+    activeKeys.push({ keyName: 'groq_api_key', value: groqLocal });
+  }
+
+  return activeKeys;
 }
 
 /**
  * Função principal para analisar o rótulo de um vinho.
  */
 export async function scanWineLabel(imageInput, onProgress = () => {}) {
-  const wineApiKey = await getWineApiKey();
-  const groqApiKey = await getGroqApiKey();
+  const activeKeys = await getAllActiveApiKeys();
 
   // Se o input for um ID de amostra cadastrada da biblioteca
   if (typeof imageInput === 'string' && !imageInput.startsWith('data:image')) {
@@ -73,48 +63,69 @@ export async function scanWineLabel(imageInput, onProgress = () => {}) {
     }
   }
 
-  // 1. TENTA PRIMEIRO A API wineAPI.io SE HOUVER CHAVE CONFIGURADA
-  if (wineApiKey && (imageInput instanceof File || (typeof imageInput === 'string' && imageInput.startsWith('data:image')))) {
-    try {
-      onProgress({ stage: 'init', percent: 25, text: 'Conectando ao banco de vinhos da wineAPI.io…' });
-      await sleep(300);
+  // Se houver qualquer chave ativa configurada
+  if (activeKeys.length > 0 && (imageInput instanceof File || (typeof imageInput === 'string' && imageInput.startsWith('data:image')))) {
+    let lastError = null;
 
-      onProgress({ stage: 'ai_vision', percent: 65, text: 'Identificando rótulo na base wineAPI.io…' });
-      const result = await analyzeWineWithWineAPI(imageInput, wineApiKey, onProgress);
+    // Procura primeiro por uma chave da wineAPI.io
+    const wineApiKeyObj = activeKeys.find(k => k.keyName === 'wineapi_key' || k.keyName.includes('wine'));
+    if (wineApiKeyObj) {
+      try {
+        onProgress({ stage: 'init', percent: 25, text: 'Conectando à wineAPI.io…' });
+        await sleep(300);
 
-      onProgress({ stage: 'done', percent: 100, text: 'Vinho identificado pela wineAPI.io!' });
-      return result;
-    } catch (err) {
-      console.warn('[VinoVision] Falha na wineAPI.io. Tentando motor secundário (Groq):', err);
-      if (!groqApiKey) throw err;
+        onProgress({ stage: 'ai_vision', percent: 65, text: 'Identificando rótulo na base wineAPI.io…' });
+        const result = await analyzeWineWithWineAPI(imageInput, wineApiKeyObj.value, onProgress);
+
+        onProgress({ stage: 'done', percent: 100, text: 'Vinho identificado pela wineAPI.io!' });
+        return result;
+      } catch (err) {
+        console.warn('[VinoVision] Falha na wineAPI.io. Tentando próxima chave de IA:', err);
+        lastError = err;
+      }
     }
-  }
 
-  // 2. TENTA A API DA GROQ IA SE TIVER CHAVE GROQ CONFIGURADA
-  if (groqApiKey && (imageInput instanceof File || (typeof imageInput === 'string' && imageInput.startsWith('data:image')))) {
-    try {
-      onProgress({ stage: 'init', percent: 20, text: 'Otimizando foto do rótulo…' });
-      const optimizedBase64 = await compressImageForVision(imageInput, 1024, 1024, 0.85);
+    // Procura por chaves da Groq (chaves que começam com gsk_ ou keyName groq)
+    const groqKeyObj = activeKeys.find(k => k.keyName === 'groq_api_key' || k.value.startsWith('gsk_') || k.keyName.includes('groq'));
+    if (groqKeyObj) {
+      try {
+        onProgress({ stage: 'init', percent: 20, text: 'Otimizando foto do rótulo…' });
+        const optimizedBase64 = await compressImageForVision(imageInput, 1024, 1024, 0.85);
 
-      onProgress({ stage: 'ai_vision', percent: 60, text: 'Analisando rótulo com Visão Computacional IA…' });
-      const result = await analyzeWineWithGroq(optimizedBase64, groqApiKey, onProgress);
-      
-      onProgress({ stage: 'done', percent: 100, text: 'Vinho analisado pela IA com sucesso!' });
-      return result;
-    } catch (err) {
-      console.error('[VinoVision IA] Erro na análise de visão:', err);
-      throw err;
+        onProgress({ stage: 'ai_vision', percent: 60, text: 'Analisando rótulo com Visão Computacional Groq…' });
+        const result = await analyzeWineWithGroq(optimizedBase64, groqKeyObj.value, onProgress);
+        
+        onProgress({ stage: 'done', percent: 100, text: 'Vinho analisado pela IA com sucesso!' });
+        return result;
+      } catch (err) {
+        console.error('[VinoVision IA] Erro na análise de visão Groq:', err);
+        lastError = err;
+      }
     }
+
+    // Tenta qualquer outra chave genérica cadastrada
+    for (const keyObj of activeKeys) {
+      if (keyObj === wineApiKeyObj || keyObj === groqKeyObj) continue;
+
+      try {
+        if (keyObj.value.startsWith('gsk_')) {
+          const optimizedBase64 = await compressImageForVision(imageInput, 1024, 1024, 0.85);
+          return await analyzeWineWithGroq(optimizedBase64, keyObj.value, onProgress);
+        } else {
+          return await analyzeWineWithWineAPI(imageInput, keyObj.value, onProgress);
+        }
+      } catch (err) {
+        lastError = err;
+      }
+    }
+
+    if (lastError) throw lastError;
   }
 
-  // Se nenhuma chave de API estiver configurada
-  if (!wineApiKey && !groqApiKey) {
-    throw new Error(
-      'Nenhum serviço de análise de vinho configurado.\n\nConfigure uma chave de API no Painel Admin → Conexões.'
-    );
-  }
-
-  throw new Error('Formato de imagem não suportado.');
+  // Se nenhuma chave de API estiver cadastrada ou ativa
+  throw new Error(
+    'Nenhum serviço de análise de vinho configurado.\n\nConfigure uma chave de API no Painel Admin → Conexões.'
+  );
 }
 
 /**
@@ -146,7 +157,7 @@ async function analyzeWineWithWineAPI(imageInput, apiKey, onProgress) {
   if (!response.ok) {
     const errText = await response.text().catch(() => '');
     if (response.status === 401) {
-      throw new Error('Chave da wineAPI.io inválida (X-API-Key). Verifique nas configurações do Admin.');
+      throw new Error('Chave da wineAPI.io inválida (X-API-Key). Verifique a chave no Painel Admin → Conexões.');
     }
     throw new Error(`wineAPI.io HTTP ${response.status}: ${errText || response.statusText}`);
   }
@@ -218,6 +229,9 @@ function dataURItoBlob(dataURI) {
   return new Blob([ab], { type: mimeString });
 }
 
+/**
+ * Envia a imagem para a API da Groq
+ */
 async function analyzeWineWithGroq(base64DataUrl, apiKey, onProgress) {
   const activeModels = await fetchActiveGroqModels(apiKey);
 
