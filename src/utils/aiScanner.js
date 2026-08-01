@@ -2,12 +2,14 @@ import { SAMPLE_WINES } from '../data/sampleWines';
 import { supabase } from '../lib/supabase';
 
 /**
- * Busca a chave da API wineAPI.io (X-API-Key) na seguinte prioridade:
- * 1. Tabela public.app_config do Supabase (key = 'wineapi_key')
- * 2. localStorage local (vinovision_wineapi_key)
- * 3. Variável de ambiente VITE_WINEAPI_KEY
+ * Busca a chave da API wineAPI.io (X-API-Key)
  */
 export async function getWineApiKey() {
+  // Se foi marcada como deletada pelo Admin, não utiliza
+  if (localStorage.getItem('vinovision_wineapi_key_deleted') === 'true') {
+    return '';
+  }
+
   try {
     const { data } = await supabase
       .from('app_config')
@@ -18,9 +20,7 @@ export async function getWineApiKey() {
     if (data?.value && data.value.trim()) {
       return data.value.trim();
     }
-  } catch (e) {
-    // ignora se tabela não existir
-  }
+  } catch (e) {}
 
   const localKey = (localStorage.getItem('vinovision_wineapi_key') || '').trim();
   if (localKey) return localKey;
@@ -32,6 +32,11 @@ export async function getWineApiKey() {
  * Busca a chave de API da Groq (fallback)
  */
 export async function getGroqApiKey() {
+  // Se foi marcada como deletada pelo Admin, não utiliza
+  if (localStorage.getItem('vinovision_groq_key_deleted') === 'true') {
+    return '';
+  }
+
   try {
     const { data } = await supabase
       .from('app_config')
@@ -52,7 +57,6 @@ export async function getGroqApiKey() {
 
 /**
  * Função principal para analisar o rótulo de um vinho.
- * Tenta primeiro a API wineAPI.io, e utiliza a Groq como motor secundário de visão.
  */
 export async function scanWineLabel(imageInput, onProgress = () => {}) {
   const wineApiKey = await getWineApiKey();
@@ -106,7 +110,7 @@ export async function scanWineLabel(imageInput, onProgress = () => {}) {
   // Se nenhuma chave de API estiver configurada
   if (!wineApiKey && !groqApiKey) {
     throw new Error(
-      'Nenhum serviço de análise de vinho configurado.\n\nConfigure a chave da wineAPI.io ou da Groq no Painel Admin → Conexões.'
+      'Nenhum serviço de análise de vinho configurado.\n\nConfigure uma chave de API no Painel Admin → Conexões.'
     );
   }
 
@@ -203,9 +207,6 @@ function mapWineAPIResponseToApp(resData, originalInput) {
   };
 }
 
-/**
- * Converte base64 DataURI para objeto Blob para envio em FormData
- */
 function dataURItoBlob(dataURI) {
   const byteString = atob(dataURI.split(',')[1]);
   const mimeString = dataURI.split(',')[0].split(':')[1].split(';')[0];
@@ -217,9 +218,6 @@ function dataURItoBlob(dataURI) {
   return new Blob([ab], { type: mimeString });
 }
 
-/**
- * Envia a imagem otimizada para a API da Groq (motor secundário)
- */
 async function analyzeWineWithGroq(base64DataUrl, apiKey, onProgress) {
   const activeModels = await fetchActiveGroqModels(apiKey);
 
@@ -390,9 +388,6 @@ async function fetchActiveGroqModels(apiKey) {
   return [];
 }
 
-/**
- * Redimensiona e comprime a foto via Canvas para no máximo 1024px.
- */
 function compressImageForVision(fileOrBase64, maxWidth = 1024, maxHeight = 1024, quality = 0.85) {
   return new Promise((resolve, reject) => {
     const img = new Image();

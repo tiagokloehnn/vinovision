@@ -41,14 +41,14 @@ export default function AdminPage() {
   // ── ESTADO DINÂMICO DE CONEXÕES ──
   const [connectionsList, setConnectionsList] = useState([]);
   const [loadingConnections, setLoadingConnections] = useState(true);
-  const [showKeyMap, setShowKeyMap] = useState({}); // { [keyName]: boolean }
-  const [statusMap, setStatusMap] = useState({});   // { [keyName]: { state, message } }
-  const [testingMap, setTestingMap] = useState({}); // { [keyName]: boolean }
-  const [savingMap, setSavingMap] = useState({});  // { [keyName]: boolean }
+  const [showKeyMap, setShowKeyMap] = useState({});
+  const [statusMap, setStatusMap] = useState({});
+  const [testingMap, setTestingMap] = useState({});
+  const [savingMap, setSavingMap] = useState({});
 
   // MODAL DE ADICIONAR CONEXÃO
   const [showAddModal, setShowAddModal] = useState(false);
-  const [newConnType, setNewConnType] = useState('wineapi'); // 'wineapi' | 'groq' | 'gemini' | 'openai' | 'custom'
+  const [newConnType, setNewConnType] = useState('wineapi');
   const [newConnName, setNewConnName] = useState('');
   const [newConnKey, setNewConnKey] = useState('');
 
@@ -80,70 +80,68 @@ export default function AdminPage() {
     setLoadingConnections(true);
     let list = [];
 
-    // Chaves padrão pré-existentes ou no localStorage/env
-    const wineKey = (localStorage.getItem('vinovision_wineapi_key') || import.meta.env.VITE_WINEAPI_KEY || '').trim();
-    const groqKey = (localStorage.getItem('vinovision_groq_key') || import.meta.env.VITE_GROQ_API_KEY || '').trim();
+    // Busca o que está gravado no Supabase app_config
+    let dbKeys = [];
+    try {
+      const { data } = await supabase
+        .from('app_config')
+        .select('key, value');
+      if (data) dbKeys = data;
+    } catch (err) {
+      console.warn('[AdminPage] Tabela app_config indisponível:', err);
+    }
 
-    if (wineKey) {
+    // Verifica flags de exclusão
+    const wineDeleted = localStorage.getItem('vinovision_wineapi_key_deleted') === 'true';
+    const groqDeleted = localStorage.getItem('vinovision_groq_key_deleted') === 'true';
+
+    // 1. Chave wineAPI.io
+    const wineDb = dbKeys.find(item => item.key === 'wineapi_key')?.value;
+    const wineVal = wineDb?.trim() || (wineDeleted ? '' : (localStorage.getItem('vinovision_wineapi_key') || import.meta.env.VITE_WINEAPI_KEY || '').trim());
+
+    if (wineVal && !wineDeleted) {
       list.push({
         id: 'wineapi_key',
         keyName: 'wineapi_key',
         name: 'wineAPI.io Integration',
         description: 'API especialista em reconhecimento visual e banco de dados global de vinhos (wineAPI.io)',
-        value: wineKey,
+        value: wineVal,
         badge: 'Principal',
         type: 'wineapi'
       });
     }
 
-    if (groqKey) {
+    // 2. Chave Groq Vision
+    const groqDb = dbKeys.find(item => item.key === 'groq_api_key')?.value;
+    const groqVal = groqDb?.trim() || (groqDeleted ? '' : (localStorage.getItem('vinovision_groq_key') || import.meta.env.VITE_GROQ_API_KEY || '').trim());
+
+    if (groqVal && !groqDeleted) {
       list.push({
         id: 'groq_api_key',
         keyName: 'groq_api_key',
         name: 'Groq AI Vision Integration',
         description: 'Visão computacional via modelos Llama 3.2 Vision (Motor secundário de IA)',
-        value: groqKey,
+        value: groqVal,
         badge: 'Motor IA',
         type: 'groq'
       });
     }
 
-    try {
-      const { data } = await supabase
-        .from('app_config')
-        .select('key, value');
+    // 3. Outras conexões dinâmicas do Supabase
+    dbKeys.forEach(item => {
+      if (item.key === 'wineapi_key' || item.key === 'groq_api_key') return;
+      if (!item.value || !item.value.trim()) return;
 
-      if (data && data.length > 0) {
-        data.forEach(item => {
-          if (!item.value || !item.value.trim()) return;
-
-          const existingIndex = list.findIndex(c => c.keyName === item.key);
-          if (existingIndex !== -1) {
-            list[existingIndex].value = item.value.trim();
-          } else {
-            // Nova conexão customizada salva no Supabase
-            let name = 'Conexão Personalizada';
-            let type = 'custom';
-            if (item.key.includes('wine')) { name = 'wineAPI.io Integration'; type = 'wineapi'; }
-            else if (item.key.includes('groq')) { name = 'Groq AI Vision'; type = 'groq'; }
-            else if (item.key.includes('gemini')) { name = 'Google Gemini 2.0'; type = 'gemini'; }
-            else if (item.key.includes('openai')) { name = 'OpenAI GPT-4o'; type = 'openai'; }
-
-            list.push({
-              id: item.key,
-              keyName: item.key,
-              name: name,
-              description: `Integração configurada globalmente (Chave: ${item.key})`,
-              value: item.value.trim(),
-              badge: 'Ativa',
-              type: type
-            });
-          }
-        });
-      }
-    } catch (err) {
-      console.warn('[AdminPage] Tabela app_config indisponível:', err);
-    }
+      list.push({
+        id: item.key,
+        keyName: item.key,
+        name: item.key.includes('gemini') ? 'Google Gemini 2.0' : item.key.includes('openai') ? 'OpenAI GPT-4o' : 'Conexão Personalizada',
+        description: `Integração configurada globalmente (${item.key})`,
+        value: item.value.trim(),
+        badge: 'Ativa',
+        type: 'custom'
+      });
+    });
 
     setConnectionsList(list);
     setLoadingConnections(false);
@@ -202,9 +200,11 @@ export default function AdminPage() {
 
     try {
       if (keyName === 'wineapi_key') {
+        localStorage.removeItem('vinovision_wineapi_key_deleted');
         if (val) localStorage.setItem('vinovision_wineapi_key', val);
         else localStorage.removeItem('vinovision_wineapi_key');
       } else if (keyName === 'groq_api_key') {
+        localStorage.removeItem('vinovision_groq_key_deleted');
         if (val) localStorage.setItem('vinovision_groq_key', val);
         else localStorage.removeItem('vinovision_groq_key');
       }
@@ -262,23 +262,26 @@ export default function AdminPage() {
     }
   };
 
-  // ── EXCLUIR CONEXÃO (REMOVE DO BANCO, LOCALSTORAGE E DA LISTA) ──
+  // ── EXCLUIR CONEXÃO (PERMANENTE - REMOVE DO BANCO, MARCA DELETED E REMOVE DA TELA) ──
   const handleDeleteConnectionItem = async (item) => {
     const keyName = item.keyName;
     const labelName = item.name;
 
     try {
-      // 1. Apaga do Supabase app_config
-      const { error } = await supabase
+      // 1. Apaga do Supabase app_config se existir
+      await supabase
         .from('app_config')
         .delete()
         .eq('key', keyName);
 
-      if (error) console.warn('[AdminPage] Erro ao deletar no Supabase:', error.message);
-
-      // 2. Apaga do LocalStorage
-      if (keyName === 'wineapi_key') localStorage.removeItem('vinovision_wineapi_key');
-      if (keyName === 'groq_api_key') localStorage.removeItem('vinovision_groq_key');
+      // 2. Marca flag de exclusão no LocalStorage para impedir a ressurreição por VITE_...
+      if (keyName === 'wineapi_key') {
+        localStorage.removeItem('vinovision_wineapi_key');
+        localStorage.setItem('vinovision_wineapi_key_deleted', 'true');
+      } else if (keyName === 'groq_api_key') {
+        localStorage.removeItem('vinovision_groq_key');
+        localStorage.setItem('vinovision_groq_key_deleted', 'true');
+      }
 
       // 3. REMOVE IMEDIATAMENTE DA LISTA DE EXIBIÇÃO DA TELA!
       setConnectionsList(prev => prev.filter(c => c.keyName !== keyName));
@@ -308,12 +311,14 @@ export default function AdminPage() {
       connName = 'wineAPI.io Integration';
       connDesc = 'API especialista em reconhecimento visual e banco de dados global de vinhos (wineAPI.io)';
       connBadge = 'Principal';
+      localStorage.removeItem('vinovision_wineapi_key_deleted');
       localStorage.setItem('vinovision_wineapi_key', val);
     } else if (newConnType === 'groq') {
       targetKey = 'groq_api_key';
       connName = 'Groq AI Vision Integration';
       connDesc = 'Visão computacional via modelos Llama 3.2 Vision (Motor secundário de IA)';
       connBadge = 'Motor IA';
+      localStorage.removeItem('vinovision_groq_key_deleted');
       localStorage.setItem('vinovision_groq_key', val);
     } else if (newConnType === 'gemini') {
       targetKey = 'gemini_api_key';
@@ -340,7 +345,6 @@ export default function AdminPage() {
         .from('app_config')
         .upsert({ key: targetKey, value: val, updated_at: new Date().toISOString() });
 
-      // Atualiza a lista exibida na tela adicionando ou atualizando a conexão
       setConnectionsList(prev => {
         const filtered = prev.filter(c => c.keyName !== targetKey);
         return [...filtered, newConnObj];
