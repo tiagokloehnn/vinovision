@@ -93,9 +93,26 @@ export function AuthProvider({ children }) {
   };
 
   const signOut = async () => {
-    await supabase.auth.signOut();
-    setUser(null);
-    setProfile(null);
+    try {
+      await supabase.auth.signOut();
+    } catch (err) {
+      console.error('[AuthContext] Erro ao deslogar no Supabase:', err);
+    } finally {
+      // Garante que o estado local seja limpo independentemente de erros da API
+      setUser(null);
+      setProfile(null);
+      
+      // Limpa os tokens do Supabase salvos no localStorage
+      try {
+        Object.keys(localStorage).forEach(key => {
+          if (key.startsWith('sb-') || key.includes('supabase')) {
+            localStorage.removeItem(key);
+          }
+        });
+      } catch (e) {
+        console.error('[AuthContext] Erro ao limpar localStorage:', e);
+      }
+    }
   };
 
   const resetPassword = async (email) => {

@@ -38,6 +38,13 @@ export default function Navbar({ activeTab, setActiveTab, cellarCount }) {
   const roleBadge = getRoleBadge();
   const RoleBadgeIcon = roleBadge.Icon;
 
+  const handleLogout = async (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setShowUserMenu(false);
+    await signOut();
+  };
+
   return (
     <>
       <header style={{ position: 'sticky', top: 0, zIndex: 50, padding: `var(--space-3) var(--space-6)`, background: 'rgba(11,5,8,0.9)', backdropFilter: 'blur(20px)', borderBottom: '1px solid var(--border-clean)' }}>
@@ -45,7 +52,7 @@ export default function Navbar({ activeTab, setActiveTab, cellarCount }) {
 
           {/* ── LOGO ── */}
           <div onClick={() => setActiveTab('scanner')} className="flex items-center" style={{ gap: 'var(--space-3)', cursor: 'pointer' }}>
-            <div style={{ width: 'clamp(2rem,3.5vw,2.5rem)', height: 'clamp(2rem,3.5vw,2.5rem)', borderRadius: 'var(--radius-md)', background: 'linear-gradient(135deg, #800e26, #3b0911)', border: '1px solid rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyCenter: 'center', flexShrink: 0 }}>
+            <div style={{ width: 'clamp(2rem,3.5vw,2.5rem)', height: 'clamp(2rem,3.5vw,2.5rem)', borderRadius: 'var(--radius-md)', background: 'linear-gradient(135deg, #800e26, #3b0911)', border: '1px solid rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
               <Wine style={{ width: 'var(--text-lg)', height: 'var(--text-lg)', color: 'var(--gold-light)' }} />
             </div>
             <div>
@@ -62,7 +69,7 @@ export default function Navbar({ activeTab, setActiveTab, cellarCount }) {
           {/* ── NAV DESKTOP ── */}
           <nav className="hidden sm:flex items-center" style={{ background: 'rgba(255,255,255,0.05)', padding: 'var(--space-1)', borderRadius: '99px', border: '1px solid var(--border-clean)', gap: 'var(--space-1)' }}>
             {NAV.map(({ id, Icon, label }) => (
-              <button key={id} onClick={() => setActiveTab(id)} className="flex items-center relative font-semibold transition-all"
+              <button key={id} type="button" onClick={() => setActiveTab(id)} className="flex items-center relative font-semibold transition-all"
                 style={{ gap: 'var(--space-2)', padding: `var(--space-2) var(--space-4)`, borderRadius: '99px', fontSize: 'var(--text-sm)', border: 'none', cursor: 'pointer', background: activeTab === id ? 'var(--wine-primary)' : 'transparent', color: activeTab === id ? 'var(--gold-light)' : 'var(--text-muted)' }}
               >
                 <Icon style={{ width: 'var(--text-base)', height: 'var(--text-base)' }} />
@@ -78,7 +85,7 @@ export default function Navbar({ activeTab, setActiveTab, cellarCount }) {
 
           {/* ── BOTÕES DIREITA ── */}
           <div className="flex items-center" style={{ gap: 'var(--space-3)' }}>
-            <button onClick={() => setActiveTab('scanner')} className="btn-gold hidden sm:inline-flex">
+            <button type="button" onClick={() => setActiveTab('scanner')} className="btn-gold hidden sm:inline-flex">
               <Sparkles style={{ width: 'var(--text-sm)', height: 'var(--text-sm)' }} />
               Escanear
             </button>
@@ -86,6 +93,7 @@ export default function Navbar({ activeTab, setActiveTab, cellarCount }) {
             {/* Avatar do usuário com borda da role */}
             <div style={{ position: 'relative' }}>
               <button
+                type="button"
                 onClick={() => setShowUserMenu(v => !v)}
                 style={{
                   width: 'clamp(2.2rem,3.8vw,2.6rem)',
@@ -139,6 +147,7 @@ export default function Navbar({ activeTab, setActiveTab, cellarCount }) {
                   {/* Atalho Painel Admin para ADMIN */}
                   {isAdmin && (
                     <button
+                      type="button"
                       onClick={() => { setActiveTab('admin'); setShowUserMenu(false); }}
                       className="flex items-center"
                       style={{ gap: 'var(--space-2)', padding: `var(--space-2) var(--space-3)`, borderRadius: 'var(--radius-md)', fontSize: 'var(--text-sm)', fontWeight: 600, background: 'rgba(212, 175, 55, 0.15)', border: '1px solid rgba(212, 175, 55, 0.3)', color: 'var(--gold-light)', cursor: 'pointer' }}
@@ -150,7 +159,8 @@ export default function Navbar({ activeTab, setActiveTab, cellarCount }) {
 
                   {/* Sair */}
                   <button
-                    onClick={() => { signOut(); setShowUserMenu(false); }}
+                    type="button"
+                    onClick={handleLogout}
                     className="flex items-center"
                     style={{ gap: 'var(--space-2)', padding: `var(--space-2) var(--space-3)`, borderRadius: 'var(--radius-md)', fontSize: 'var(--text-sm)', fontWeight: 600, background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', color: '#f87171', cursor: 'pointer', transition: 'all 0.2s' }}
                     onMouseEnter={e => e.currentTarget.style.background = 'rgba(239,68,68,0.2)'}
@@ -168,7 +178,7 @@ export default function Navbar({ activeTab, setActiveTab, cellarCount }) {
         {/* ── NAV MOBILE ── */}
         <div className="flex sm:hidden justify-around flex-wrap" style={{ marginTop: 'var(--space-3)', paddingTop: 'var(--space-3)', borderTop: '1px solid var(--border-clean)', gap: 'var(--space-1)' }}>
           {NAV.map(({ id, Icon, label }) => (
-            <button key={id} onClick={() => setActiveTab(id)} className="flex items-center font-semibold"
+            <button key={id} type="button" onClick={() => setActiveTab(id)} className="flex items-center font-semibold"
               style={{ gap: 'var(--space-1)', padding: `var(--space-1) var(--space-3)`, borderRadius: '99px', fontSize: 'var(--text-xs)', border: 'none', cursor: 'pointer', background: activeTab === id ? 'var(--wine-primary)' : 'transparent', color: activeTab === id ? 'var(--gold-light)' : 'var(--text-muted)' }}
             >
               <Icon style={{ width: 'var(--text-base)', height: 'var(--text-base)' }} />
