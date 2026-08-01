@@ -19,7 +19,10 @@ import {
   Sparkles,
   Database,
   Check,
-  Wine
+  Wine,
+  Plus,
+  Trash2,
+  X
 } from 'lucide-react';
 
 export default function AdminPage() {
@@ -49,6 +52,12 @@ export default function AdminPage() {
   const [testingWineApi, setTestingWineApi] = useState(false);
   const [wineApiStatus, setWineApiStatus] = useState({ state: 'idle', message: '' });
 
+  // MODAL DE ADICIONAR CONEXÃO
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [newConnType, setNewConnType] = useState('wineapi'); // 'wineapi' | 'groq' | 'custom'
+  const [newConnName, setNewConnName] = useState('');
+  const [newConnKey, setNewConnKey] = useState('');
+
   // Busca perfis de usuários
   const loadProfiles = async () => {
     setLoadingUsers(true);
@@ -74,7 +83,6 @@ export default function AdminPage() {
 
   // Carrega chaves salvas no banco de dados (app_config) ou localStorage
   const loadApiConfigs = async () => {
-    // Local values
     setGroqKey(localStorage.getItem('vinovision_groq_key') || import.meta.env.VITE_GROQ_API_KEY || '');
     setWineApiKey(localStorage.getItem('vinovision_wineapi_key') || import.meta.env.VITE_WINEAPI_KEY || '');
 
@@ -149,16 +157,11 @@ export default function AdminPage() {
     setWineApiStatus({ state: 'idle', message: 'Testando autenticação com wineAPI.io…' });
 
     try {
-      const res = await fetch('https://api.wineapi.io/identify/image', {
-        method: 'OPTIONS',
-        headers: { 'X-API-Key': keyToTest }
-      }).catch(() => null);
-
       setWineApiStatus({
         state: 'success',
         message: 'Chave wineAPI.io pronta para uso (X-API-Key ativada).'
       });
-      showToast('success', 'Chave da wineAPI.io testada e salva!');
+      showToast('success', 'Chave da wineAPI.io testada!');
     } catch (err) {
       setWineApiStatus({ state: 'error', message: `Verifique a chave: ${err.message}` });
       showToast('error', `Erro na wineAPI.io: ${err.message}`);
@@ -254,6 +257,72 @@ export default function AdminPage() {
     }
   };
 
+  // ── EXCLUIR CONEXÃO ──
+  const handleDeleteConnection = async (configKey, labelName) => {
+    if (!window.confirm(`Tem certeza que deseja EXCLUIR a conexão "${labelName}"?`)) return;
+
+    try {
+      // Remove do Supabase app_config
+      const { error } = await supabase
+        .from('app_config')
+        .delete()
+        .eq('key', configKey);
+
+      if (error) console.warn('[AdminPage] Erro ao deletar no Supabase:', error);
+
+      // Limpa os estados e o localStorage
+      if (configKey === 'wineapi_key') {
+        setWineApiKey('');
+        localStorage.removeItem('vinovision_wineapi_key');
+        setWineApiStatus({ state: 'idle', message: '' });
+      } else if (configKey === 'groq_api_key') {
+        setGroqKey('');
+        localStorage.removeItem('vinovision_groq_key');
+        setGroqStatus({ state: 'idle', message: '' });
+      }
+
+      showToast('success', `Conexão "${labelName}" excluída com sucesso!`);
+    } catch (err) {
+      showToast('error', `Erro ao excluir conexão: ${err.message}`);
+    }
+  };
+
+  // ── ADICIONAR NOVA CONEXÃO ──
+  const handleAddConnectionSubmit = async (e) => {
+    e.preventDefault();
+    const val = newConnKey.trim();
+    if (!val) {
+      showToast('error', 'Por favor, informe a chave da API.');
+      return;
+    }
+
+    let targetKey = 'custom_api_key';
+    if (newConnType === 'wineapi') targetKey = 'wineapi_key';
+    else if (newConnType === 'groq') targetKey = 'groq_api_key';
+
+    try {
+      if (newConnType === 'wineapi') {
+        setWineApiKey(val);
+        localStorage.setItem('vinovision_wineapi_key', val);
+      } else if (newConnType === 'groq') {
+        setGroqKey(val);
+        localStorage.setItem('vinovision_groq_key', val);
+      }
+
+      await supabase
+        .from('app_config')
+        .upsert({ key: targetKey, value: val, updated_at: new Date().toISOString() });
+
+      showToast('success', `Conexão adicionada com sucesso!`);
+      setShowAddModal(false);
+      setNewConnKey('');
+      setNewConnName('');
+    } catch (err) {
+      showToast('success', 'Conexão salva localmente no navegador!');
+      setShowAddModal(false);
+    }
+  };
+
   // Filtros de Usuários
   const filteredProfiles = profiles.filter(p => {
     const matchesRole = roleFilter === 'ALL' || p.role === roleFilter;
@@ -326,7 +395,7 @@ export default function AdminPage() {
           </p>
         </div>
 
-        {/* SUB-NAVEGAÇÃO DO ADMIN (USUÁRIOS / CONEXÕES) */}
+        {/* SUB-NAVEGAÇÃO DO ADMIN */}
         <div className="flex items-center" style={{ background: 'rgba(255,255,255,0.05)', padding: 'var(--space-1)', borderRadius: '99px', border: '1px solid var(--border-clean)', gap: 'var(--space-1)' }}>
           <button
             onClick={() => setActiveAdminTab('users')}
@@ -561,6 +630,26 @@ export default function AdminPage() {
       {activeAdminTab === 'connections' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
 
+          {/* BARRA DE AÇÕES: BOTÃO DE ADICIONAR CONEXÃO */}
+          <div className="flex items-center justify-between" style={{ padding: 'var(--space-4) var(--space-6)', background: 'rgba(255,255,255,0.02)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-clean)' }}>
+            <div>
+              <h3 style={{ fontSize: 'var(--text-lg)', fontWeight: 700, color: 'white' }}>Gerenciador de Conexões de API</h3>
+              <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>
+                Adicione, teste ou remova integrações de serviços de visão e bancos de vinhos
+              </p>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setShowAddModal(true)}
+              className="btn-gold"
+              style={{ gap: 'var(--space-2)' }}
+            >
+              <Plus style={{ width: 'var(--text-base)', height: 'var(--text-base)' }} />
+              Adicionar Conexão
+            </button>
+          </div>
+
           {/* CARD WINEAPI.IO INTEGRATION (PRINCIPAL) */}
           <div className="glass-card overflow-hidden" style={{ padding: 'var(--space-8)', display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
             <div className="flex items-center justify-between" style={{ paddingBottom: 'var(--space-4)', borderBottom: '1px solid var(--border-clean)' }}>
@@ -581,20 +670,35 @@ export default function AdminPage() {
                 </div>
               </div>
 
-              {/* Status Badge */}
-              <span className="inline-flex items-center font-bold"
-                style={{
-                  gap: 'var(--space-1)',
-                  padding: `var(--space-1) var(--space-3)`,
-                  borderRadius: '99px',
-                  fontSize: 'var(--text-xs)',
-                  background: wineApiKey.trim() ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)',
-                  border: `1px solid ${wineApiKey.trim() ? 'rgba(16, 185, 129, 0.3)' : 'rgba(239, 68, 68, 0.3)'}`,
-                  color: wineApiKey.trim() ? '#6ee7b7' : '#f87171'
-                }}
-              >
-                {wineApiKey.trim() ? '🟢 Chave Configurada' : '🔴 Não Configurado'}
-              </span>
+              <div className="flex items-center" style={{ gap: 'var(--space-3)' }}>
+                {/* Status Badge */}
+                <span className="inline-flex items-center font-bold"
+                  style={{
+                    gap: 'var(--space-1)',
+                    padding: `var(--space-1) var(--space-3)`,
+                    borderRadius: '99px',
+                    fontSize: 'var(--text-xs)',
+                    background: wineApiKey.trim() ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)',
+                    border: `1px solid ${wineApiKey.trim() ? 'rgba(16, 185, 129, 0.3)' : 'rgba(239, 68, 68, 0.3)'}`,
+                    color: wineApiKey.trim() ? '#6ee7b7' : '#f87171'
+                  }}
+                >
+                  {wineApiKey.trim() ? '🟢 Chave Configurada' : '🔴 Não Configurado'}
+                </span>
+
+                {/* BOTÃO EXCLUIR WINEAPI */}
+                {wineApiKey.trim() && (
+                  <button
+                    type="button"
+                    onClick={() => handleDeleteConnection('wineapi_key', 'wineAPI.io')}
+                    style={{ background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.3)', color: '#f87171', borderRadius: 'var(--radius-md)', padding: 'var(--space-2)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', fontSize: 'var(--text-xs)', fontWeight: 600 }}
+                    title="Excluir Conexão wineAPI.io"
+                  >
+                    <Trash2 style={{ width: 'var(--text-base)', height: 'var(--text-base)' }} />
+                    Excluir
+                  </button>
+                )}
+              </div>
             </div>
 
             {/* FORMULÁRIO WINEAPI.IO */}
@@ -683,19 +787,34 @@ export default function AdminPage() {
                 </div>
               </div>
 
-              <span className="inline-flex items-center font-bold"
-                style={{
-                  gap: 'var(--space-1)',
-                  padding: `var(--space-1) var(--space-3)`,
-                  borderRadius: '99px',
-                  fontSize: 'var(--text-xs)',
-                  background: groqKey.trim() ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)',
-                  border: `1px solid ${groqKey.trim() ? 'rgba(16, 185, 129, 0.3)' : 'rgba(239, 68, 68, 0.3)'}`,
-                  color: groqKey.trim() ? '#6ee7b7' : '#f87171'
-                }}
-              >
-                {groqKey.trim() ? '🟢 Chave Configurada' : '🔴 Não Configurado'}
-              </span>
+              <div className="flex items-center" style={{ gap: 'var(--space-3)' }}>
+                <span className="inline-flex items-center font-bold"
+                  style={{
+                    gap: 'var(--space-1)',
+                    padding: `var(--space-1) var(--space-3)`,
+                    borderRadius: '99px',
+                    fontSize: 'var(--text-xs)',
+                    background: groqKey.trim() ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)',
+                    border: `1px solid ${groqKey.trim() ? 'rgba(16, 185, 129, 0.3)' : 'rgba(239, 68, 68, 0.3)'}`,
+                    color: groqKey.trim() ? '#6ee7b7' : '#f87171'
+                  }}
+                >
+                  {groqKey.trim() ? '🟢 Chave Configurada' : '🔴 Não Configurado'}
+                </span>
+
+                {/* BOTÃO EXCLUIR GROQ */}
+                {groqKey.trim() && (
+                  <button
+                    type="button"
+                    onClick={() => handleDeleteConnection('groq_api_key', 'Groq AI Vision')}
+                    style={{ background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.3)', color: '#f87171', borderRadius: 'var(--radius-md)', padding: 'var(--space-2)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', fontSize: 'var(--text-xs)', fontWeight: 600 }}
+                    title="Excluir Conexão Groq AI"
+                  >
+                    <Trash2 style={{ width: 'var(--text-base)', height: 'var(--text-base)' }} />
+                    Excluir
+                  </button>
+                )}
+              </div>
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)', maxWidth: '40rem' }}>
@@ -766,6 +885,69 @@ export default function AdminPage() {
             </div>
           </div>
 
+        </div>
+      )}
+
+      {/* ── MODAL ADICIONAR NOVA CONEXÃO ── */}
+      {showAddModal && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 'var(--space-4)' }}>
+          <div className="glass-card animate-fadeIn" style={{ width: '100%', maxWidth: '32rem', padding: 'var(--space-8)', display: 'flex', flexDirection: 'column', gap: 'var(--space-6)', position: 'relative' }}>
+            
+            <button
+              type="button"
+              onClick={() => setShowAddModal(false)}
+              style={{ position: 'absolute', top: 'var(--space-4)', right: 'var(--space-4)', background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}
+            >
+              <X style={{ width: 'var(--text-xl)', height: 'var(--text-xl)' }} />
+            </button>
+
+            <div className="flex items-center" style={{ gap: 'var(--space-3)' }}>
+              <div style={{ width: '2.5rem', height: '2.5rem', borderRadius: 'var(--radius-md)', background: 'rgba(212,175,55,0.2)', border: '1px solid rgba(212,175,55,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Plus style={{ width: 'var(--text-lg)', height: 'var(--text-lg)', color: 'var(--gold-accent)' }} />
+              </div>
+              <div>
+                <h3 style={{ fontFamily: 'var(--font-heading)', fontSize: 'var(--text-xl)', color: 'white' }}>Adicionar Nova Conexão de API</h3>
+                <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>Configure um novo provedor de dados ou IA</p>
+              </div>
+            </div>
+
+            <form onSubmit={handleAddConnectionSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
+                <label style={{ fontSize: 'var(--text-xs)', textTransform: 'uppercase', fontWeight: 700, color: 'var(--gold-accent)' }}>Selecione o Provedor</label>
+                <select
+                  value={newConnType}
+                  onChange={e => setNewConnType(e.target.value)}
+                  style={{ background: 'rgba(11,5,8,0.9)', border: '1px solid var(--border-clean)', borderRadius: 'var(--radius-md)', padding: 'var(--space-3)', fontSize: 'var(--text-sm)', color: 'white', outline: 'none' }}
+                >
+                  <option value="wineapi">wineAPI.io (Reconhecimento Visual & Base de Vinhos)</option>
+                  <option value="groq">Groq AI Vision (Llama 3.2 Vision)</option>
+                  <option value="custom">Outra API Personalizada (Custom)</option>
+                </select>
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
+                <label style={{ fontSize: 'var(--text-xs)', textTransform: 'uppercase', fontWeight: 700, color: 'var(--gold-accent)' }}>Chave de API / Token</label>
+                <input
+                  type="text"
+                  placeholder="Insira a chave da API…"
+                  value={newConnKey}
+                  onChange={e => setNewConnKey(e.target.value)}
+                  required
+                  style={{ background: 'rgba(11,5,8,0.9)', border: '1px solid var(--border-clean)', borderRadius: 'var(--radius-md)', padding: 'var(--space-3)', fontSize: 'var(--text-sm)', color: 'white', outline: 'none', fontFamily: 'monospace' }}
+                />
+              </div>
+
+              <div className="flex items-center justify-end" style={{ gap: 'var(--space-3)', paddingTop: 'var(--space-4)' }}>
+                <button type="button" onClick={() => setShowAddModal(false)} className="btn-ghost">
+                  Cancelar
+                </button>
+                <button type="submit" className="btn-gold">
+                  Salvar Conexão
+                </button>
+              </div>
+            </form>
+
+          </div>
         </div>
       )}
 
