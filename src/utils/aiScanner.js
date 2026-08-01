@@ -28,7 +28,7 @@ export async function getAllActiveApiKeys() {
     // ignora se a tabela ainda não existir
   }
 
-  // 2. Adiciona chaves salvas no localStorage caso não estejam no Supabase (sem fallback para env)
+  // 2. Adiciona chaves salvas no localStorage caso não estejam no Supabase
   const wineLocal = (localStorage.getItem('vinovision_wineapi_key') || '').trim();
   const groqLocal = (localStorage.getItem('vinovision_groq_key') || '').trim();
   const geminiLocal = (localStorage.getItem('vinovision_gemini_key') || '').trim();
@@ -77,7 +77,7 @@ export async function scanWineLabel(imageInput, onProgress = () => {}) {
         if (keyObj.keyName.includes('gemini') || keyObj.value.startsWith('AIza')) {
           onProgress({ stage: 'init', percent: 20, text: 'Otimizando foto para Google Gemini IA…' });
           const optimizedBase64 = await compressImageForVision(imageInput, 1024, 1024, 0.85);
-          onProgress({ stage: 'ai_vision', percent: 65, text: 'Analisando rótulo com Gemini 2.0 Flash…' });
+          onProgress({ stage: 'ai_vision', percent: 65, text: 'Analisando rótulo com Google Gemini…' });
           return await analyzeWineWithGemini(optimizedBase64, keyObj.value, onProgress);
         }
 
@@ -119,76 +119,113 @@ export async function scanWineLabel(imageInput, onProgress = () => {}) {
 }
 
 /**
- * Envia a imagem do rótulo para o Google Gemini 2.0 Flash
+ * Envia a imagem do rótulo para os modelos do Google Gemini (com suporte a fallback em caso de quota)
  */
 async function analyzeWineWithGemini(base64DataUrl, apiKey, onProgress) {
   const pureBase64 = base64DataUrl.split(',')[1] || base64DataUrl;
 
-  const promptText = `Você é um mestre sommelier. Analise esta foto de rótulo de vinho e retorne EXCLUSIVAMENTE um objeto JSON válido (sem texto antes/depois ou markdown):
+  const candidateGeminiModels = [
+    'gemini-2.0-flash',
+    'gemini-1.5-flash',
+    'gemini-2.0-flash-lite',
+    'gemini-1.5-pro'
+  ];
+
+  const promptText = `Você é um mestre sommelier e especialista em visão computacional de vinhos.
+Examine cuidadosamente esta foto de rótulo de vinho e extraia/identifique as informações reais contidas na imagem.
+Retorne EXCLUSIVAMENTE um objeto JSON válido (sem texto antes/depois ou markdown):
 
 {
-  "name": "Nome do vinho",
-  "winery": "Vinícola",
-  "vintage": "Ano da Safra",
+  "name": "Nome do vinho conforme rótulo",
+  "winery": "Nome da Vinícola / Produtor",
+  "vintage": "Ano da Safra (ex: 2019 ou 'N.V.' se não houver)",
   "type": "Red",
-  "typeName": "Tipo de Vinho",
-  "country": "País",
-  "flagEmoji": "Emoji bandeira",
-  "region": "Região",
-  "grapes": ["Casta 1"],
-  "alcohol": "Teor alcoólico",
+  "typeName": "Tipo de Vinho (ex: Tinto Reserva, Branco Seco, Espumante Brut)",
+  "country": "País de origem",
+  "flagEmoji": "Emoji da bandeira do país",
+  "region": "Região Vitivinícola",
+  "grapes": ["Casta 1", "Casta 2"],
+  "alcohol": "Teor alcoólico (ex: 13.5%)",
   "rating": 4.5,
-  "reviewsCount": 200,
-  "priceEstimate": "Estimativa em R$",
-  "serveTemp": "Temp ideal",
-  "decantTime": "Tempo de decantação",
+  "reviewsCount": 240,
+  "priceEstimate": "Estimativa de preço em R$",
+  "serveTemp": "Temperatura ideal de serviço (ex: 16°C - 18°C)",
+  "decantTime": "Tempo sugerido de decantação",
   "profile": { "body": 4, "tannin": 3, "acidity": 3, "sweetness": 1 },
-  "aromas": [{ "name": "Aroma", "icon": "🍷" }],
-  "foodPairings": [{ "title": "Harmonização", "category": "Carnes", "icon": "🥩", "description": "Explicação" }],
-  "description": "Descrição sensorial detalhada",
-  "sommelierNote": "Nota técnica do sommelier",
-  "awards": ["Prêmio"]
+  "aromas": [{ "name": "Nome do aroma", "icon": "Emoji" }],
+  "foodPairings": [{ "title": "Prato Sugerido", "category": "Categoria", "icon": "Emoji", "description": "Explicação" }],
+  "description": "Descrição sensorial detalhada e história sobre este vinho",
+  "sommelierNote": "Nota técnica do sommelier sobre o potencial de guarda e terroir",
+  "awards": ["Prêmio ou distinção se houver"]
 }`;
 
-  const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey.trim()}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      contents: [
-        {
-          parts: [
-            { text: promptText },
-            { inline_data: { mime_type: 'image/jpeg', data: pureBase64 } }
-          ]
-        }
-      ]
-    })
-  });
+  let lastError = null;
 
-  if (!response.ok) {
-    const errJson = await response.json().catch(() => ({}));
-    throw new Error(`Gemini API Error: ${errJson.error?.message || response.statusText}`);
+  for (const modelName of candidateGeminiModels) {
+    try {
+      console.log(`[VinoVision IA] Enviando imagem para Google Gemini (${modelName})…`);
+
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey.trim()}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [
+            {
+              parts: [
+                { text: promptText },
+                { inline_data: { mime_type: 'image/jpeg', data: pureBase64 } }
+              ]
+            }
+          ]
+        })
+      });
+
+      if (!response.ok) {
+        const errJson = await response.json().catch(() => ({}));
+        const errMsg = errJson.error?.message || `HTTP ${response.status} ${response.statusText}`;
+
+        console.warn(`[VinoVision IA] Gemini retornou erro no modelo ${modelName}:`, errMsg);
+
+        if (response.status === 429 || errMsg.toLowerCase().includes('quota') || errMsg.toLowerCase().includes('rate limit')) {
+          lastError = new Error('Cota limite de requisições gratuitas atingida no Google Gemini.');
+          continue;
+        }
+
+        throw new Error(`Google Gemini Error (${modelName}): ${errMsg}`);
+      }
+
+      const data = await response.json();
+      const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+      if (!rawText) throw new Error('O Google Gemini respondeu com conteúdo vazio.');
+
+      let cleanJson = rawText.trim().replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '').trim();
+      const firstB = cleanJson.indexOf('{');
+      const lastB = cleanJson.lastIndexOf('}');
+      if (firstB !== -1 && lastB !== -1) cleanJson = cleanJson.slice(firstB, lastB + 1);
+
+      const parsed = JSON.parse(cleanJson);
+      return {
+        id: `gemini-${Date.now()}`,
+        ...parsed,
+        type: parsed.type || 'Red',
+        image: base64DataUrl,
+        labelThumbnail: base64DataUrl,
+        scannedAt: new Date().toISOString(),
+        aiProvider: `Google Gemini (${modelName})`
+      };
+
+    } catch (err) {
+      if (err.message.includes('Cota limite de requisições')) {
+        lastError = err;
+        continue;
+      }
+      lastError = err;
+    }
   }
 
-  const data = await response.json();
-  const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text;
-  if (!rawText) throw new Error('O Google Gemini respondeu com conteúdo vazio.');
-
-  let cleanJson = rawText.trim().replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '').trim();
-  const firstB = cleanJson.indexOf('{');
-  const lastB = cleanJson.lastIndexOf('}');
-  if (firstB !== -1 && lastB !== -1) cleanJson = cleanJson.slice(firstB, lastB + 1);
-
-  const parsed = JSON.parse(cleanJson);
-  return {
-    id: `gemini-${Date.now()}`,
-    ...parsed,
-    type: parsed.type || 'Red',
-    image: base64DataUrl,
-    labelThumbnail: base64DataUrl,
-    scannedAt: new Date().toISOString(),
-    aiProvider: 'Google Gemini 2.0 Flash'
-  };
+  throw new Error(
+    'Sua chave da API do Google Gemini atingiu o limite gratuito de requisições por minuto.\n\nAguarde 25 segundos para realizar uma nova leitura, ou crie uma nova chave gratuita em aistudio.google.com.'
+  );
 }
 
 /**
