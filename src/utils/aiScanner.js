@@ -73,15 +73,7 @@ export async function scanWineLabel(imageInput, onProgress = () => {}) {
 
     for (const keyObj of activeKeys) {
       try {
-        // Groq API Key (Visão Computacional Llama 3.2 Vision)
-        if (keyObj.keyName === 'groq_api_key' || keyObj.value.startsWith('gsk_') || keyObj.keyName.includes('groq')) {
-          onProgress({ stage: 'init', percent: 20, text: 'Otimizando foto para Groq AI…' });
-          const optimizedBase64 = await compressImageForVision(imageInput, 1024, 1024, 0.85);
-          onProgress({ stage: 'ai_vision', percent: 65, text: 'Analisando rótulo com Groq Vision…' });
-          return await analyzeWineWithGroq(optimizedBase64, keyObj.value, onProgress);
-        }
-
-        // Gemini API Key
+        // Gemini API Key (Recomendado - Gratuito e Ativo no Google AI Studio)
         if (keyObj.keyName.includes('gemini') || keyObj.value.startsWith('AIza')) {
           onProgress({ stage: 'init', percent: 20, text: 'Otimizando foto para Google Gemini IA…' });
           const optimizedBase64 = await compressImageForVision(imageInput, 1024, 1024, 0.85);
@@ -95,6 +87,14 @@ export async function scanWineLabel(imageInput, onProgress = () => {}) {
           const optimizedBase64 = await compressImageForVision(imageInput, 1024, 1024, 0.85);
           onProgress({ stage: 'ai_vision', percent: 65, text: 'Analisando rótulo com GPT-4o…' });
           return await analyzeWineWithOpenAI(optimizedBase64, keyObj.value, onProgress);
+        }
+
+        // Groq API Key
+        if (keyObj.keyName === 'groq_api_key' || keyObj.value.startsWith('gsk_') || keyObj.keyName.includes('groq')) {
+          onProgress({ stage: 'init', percent: 20, text: 'Otimizando foto para Groq AI…' });
+          const optimizedBase64 = await compressImageForVision(imageInput, 1024, 1024, 0.85);
+          onProgress({ stage: 'ai_vision', percent: 65, text: 'Consultando modelos Groq disponíveis…' });
+          return await analyzeWineWithGroq(optimizedBase64, keyObj.value, onProgress);
         }
 
         // wineAPI.io Key
@@ -119,32 +119,32 @@ export async function scanWineLabel(imageInput, onProgress = () => {}) {
 }
 
 /**
- * Envia a imagem para os modelos de Visão da Groq (llama-3.2-11b-vision-preview e llama-3.2-90b-vision-preview)
+ * Envia a imagem para os modelos ativos da Groq (consultando a API em tempo real)
  */
 async function analyzeWineWithGroq(base64DataUrl, apiKey, onProgress, isRetry = false) {
-  // Consulta dinamicamente os modelos ativos da conta Groq
+  // Consulta em tempo real quais modelos estão ativos e suportados na conta Groq
   const activeGroqModels = await fetchActiveGroqModels(apiKey);
 
-  const defaultVisionModels = [
+  const fallbackVisionCandidates = [
+    'llava-v1.5-7b-llama-3-eval',
     'llama-3.2-11b-vision-preview',
-    'llama-3.2-90b-vision-preview',
-    'llama-3.2-11b-vision-instruct',
-    'llama-3.2-90b-vision-instruct'
+    'llama-3.2-90b-vision-preview'
   ];
 
   let candidateModels = [];
   if (activeGroqModels.length > 0) {
-    const visionFiltered = activeGroqModels.filter(m => 
+    const visionModels = activeGroqModels.filter(m => 
       m.toLowerCase().includes('vision') || 
       m.toLowerCase().includes('llava') ||
-      m.toLowerCase().includes('3.2')
+      m.toLowerCase().includes('multimodal')
     );
-    candidateModels = [...visionFiltered, ...defaultVisionModels];
-  } else {
-    candidateModels = defaultVisionModels;
+    candidateModels = [...visionModels, ...activeGroqModels.filter(m => m.includes('llama-3.2'))];
   }
 
-  // Remove duplicatas mantendo a ordem
+  if (candidateModels.length === 0) {
+    candidateModels = fallbackVisionCandidates;
+  }
+
   candidateModels = candidateModels.filter((v, i, a) => a.indexOf(v) === i);
 
   const promptText = `Você é um mestre sommelier e especialista em visão computacional de vinhos.
@@ -179,7 +179,7 @@ Retorne EXCLUSIVAMENTE um objeto JSON válido em português (sem texto antes/dep
 
   for (const modelName of candidateModels) {
     try {
-      console.log(`[VinoVision IA] Enviando imagem para Groq Vision (${modelName})…`);
+      console.log(`[VinoVision IA] Testando modelo Groq (${modelName})…`);
 
       const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
         method: 'POST',
@@ -204,26 +204,17 @@ Retorne EXCLUSIVAMENTE um objeto JSON válido em português (sem texto antes/dep
         })
       });
 
-      // Leitura dos cabeçalhos de limite oficiais da Groq (Rate Limit Headers)
       const remainingReqs = response.headers.get('x-ratelimit-remaining-requests');
-      const remainingTokens = response.headers.get('x-ratelimit-remaining-tokens');
       const retryAfter = response.headers.get('retry-after');
 
-      if (remainingReqs !== null || remainingTokens !== null) {
-        console.log(`[Groq Headers] Requisições restantes: ${remainingReqs || 'N/A'}, Tokens restantes: ${remainingTokens || 'N/A'}`);
-      }
-
-      // Trata estouro de limite (HTTP 429 - Too Many Requests)
+      // Trata estouro de limite (HTTP 429)
       if (response.status === 429) {
         const waitSec = parseInt(retryAfter || '5', 10);
-        console.warn(`[Groq RateLimit] 429 Atingido. Retry-After: ${waitSec}s`);
-
         if (!isRetry && waitSec <= 8) {
           onProgress({ stage: 'ai_vision', percent: 70, text: `Aguardando ${waitSec}s para resetar cota da Groq…` });
           await sleep(waitSec * 1000);
           return await analyzeWineWithGroq(base64DataUrl, apiKey, onProgress, true);
         }
-
         lastError = new Error(`Limite de requisições excedido na Groq (HTTP 429). Aguarde ${waitSec} segundos.`);
         continue;
       }
@@ -232,9 +223,15 @@ Retorne EXCLUSIVAMENTE um objeto JSON válido em português (sem texto antes/dep
         const errJson = await response.json().catch(() => ({}));
         const errMsg = errJson.error?.message || `HTTP ${response.status} ${response.statusText}`;
 
-        console.warn(`[Groq AI] Erro no modelo ${modelName}:`, errMsg);
-        lastError = new Error(`Erro na API Groq (${modelName}): ${errMsg}`);
-        continue;
+        console.warn(`[Groq AI] Modelo ${modelName} indisponível:`, errMsg);
+
+        // Se for modelo descontinuado/decommissioned ou inexistente, passa para o próximo modelo silenciosamente
+        if (errMsg.toLowerCase().includes('decommissioned') || errMsg.toLowerCase().includes('does not exist') || response.status === 404 || response.status === 400) {
+          lastError = new Error(`Modelo Groq descontinuado: ${modelName}`);
+          continue;
+        }
+
+        throw new Error(`Erro na API Groq (${modelName}): ${errMsg}`);
       }
 
       const data = await response.json();
@@ -257,12 +254,13 @@ Retorne EXCLUSIVAMENTE um objeto JSON válido em português (sem texto antes/dep
         aiProvider: `Groq Vision (${modelName})`
       };
     } catch (err) {
-      console.warn(`[Groq AI] Exceção no modelo ${modelName}:`, err.message);
       lastError = err;
     }
   }
 
-  throw lastError || new Error('Falha ao processar rótulo na API da Groq.');
+  throw new Error(
+    'A plataforma Groq descontinuou temporariamente os modelos Llama 3.2 Vision em sua infraestrutura.\n\nPor favor, adicione uma chave gratuita do Google Gemini 2.0 Flash no Painel Admin → Conexões para realizar o escaneamento sem interrupções.'
+  );
 }
 
 /**
