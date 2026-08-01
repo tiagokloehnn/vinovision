@@ -49,9 +49,16 @@ export async function scanWineLabel(imageInput, onProgress = () => {}) {
 }
 
 /**
- * Envia a imagem otimizada para a API da Groq (Modelo Llama 3.2 Vision)
+ * Envia a imagem otimizada para a API da Groq testando os modelos de visão ativos
  */
 async function analyzeWineWithGroq(base64DataUrl, apiKey, onProgress) {
+  // Lista de identificadores de modelos de visão da Groq (com fallbacks automáticos)
+  const VISION_MODELS = [
+    'llama-3.2-11b-vision-preview',
+    'llama-3.2-90b-vision-preview',
+    'llama-3.2-11b-vision-instruct'
+  ];
+
   const promptText = `Você é um mestre sommelier e especialista em visão computacional de vinhos.
 Examine cuidadosamente esta foto de rótulo de vinho e extraia/identifique as informações reais contidas na imagem.
 Retorne EXCLUSIVAMENTE um objeto JSON válido (sem qualquer texto adicional antes ou depois) com exatamente esta estrutura em português:
@@ -92,83 +99,95 @@ Retorne EXCLUSIVAMENTE um objeto JSON válido (sem qualquer texto adicional ante
 Nota de perfil: body (1-5), tannin (1-5), acidity (1-5), sweetness (1-5).
 Se alguma informação não estiver 100% visível, faça uma inferência de sommelier altamente precisa baseada na vinícola e no tipo de vinho identificado no rótulo.`;
 
-  const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${apiKey.trim()}`,
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({
-      model: 'llama-3.2-11b-vision-instruct',
-      messages: [
-        {
-          role: 'user',
-          content: [
-            { type: 'text', text: promptText },
+  let lastError = null;
+
+  // Tenta cada modelo de visão da lista
+  for (const modelName of VISION_MODELS) {
+    try {
+      const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${apiKey.trim()}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          model: modelName,
+          messages: [
             {
-              type: 'image_url',
-              image_url: { url: base64DataUrl }
+              role: 'user',
+              content: [
+                { type: 'text', text: promptText },
+                {
+                  type: 'image_url',
+                  image_url: { url: base64DataUrl }
+                }
+              ]
             }
-          ]
+          ],
+          temperature: 0.1,
+          max_tokens: 1500
+        })
+      });
+
+      if (!response.ok) {
+        const errJson = await response.json().catch(() => ({}));
+        const errMsg = errJson.error?.message || `HTTP ${response.status} ${response.statusText}`;
+
+        if (response.status === 401) {
+          throw new Error('Chave da API Groq inválida. Verifique sua chave no botão "API Groq" no topo da tela.');
         }
-      ],
-      temperature: 0.1,
-      max_tokens: 1500
-    })
-  });
 
-  if (!response.ok) {
-    const errJson = await response.json().catch(() => ({}));
-    const errMsg = errJson.error?.message || `HTTP ${response.status} ${response.statusText}`;
-    if (response.status === 401) {
-      throw new Error('Chave da API Groq inválida. Verifique sua chave no botão "API Groq" no topo da tela.');
+        // Se o modelo não existir ou não estiver acessível, tenta o próximo modelo da lista
+        if (errMsg.includes('does not exist') || response.status === 404 || response.status === 400) {
+          console.warn(`[VinoVision IA] Modelo ${modelName} indisponível. Tentando próximo...`);
+          lastError = new Error(errMsg);
+          continue;
+        }
+
+        throw new Error(`Groq API Error: ${errMsg}`);
+      }
+
+      const data = await response.json();
+      const rawContent = data.choices?.[0]?.message?.content;
+      if (!rawContent) throw new Error('A IA Groq respondeu com conteúdo vazio.');
+
+      let cleanJsonString = rawContent.trim();
+      
+      if (cleanJsonString.includes('```')) {
+        cleanJsonString = cleanJsonString.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '').trim();
+      }
+
+      const firstBrace = cleanJsonString.indexOf('{');
+      const lastBrace = cleanJsonString.lastIndexOf('}');
+      if (firstBrace !== -1 && lastBrace !== -1) {
+        cleanJsonString = cleanJsonString.slice(firstBrace, lastBrace + 1);
+      }
+
+      const parsed = JSON.parse(cleanJsonString);
+
+      return {
+        id: `groq-${Date.now()}`,
+        ...parsed,
+        type: parsed.type || 'Red',
+        image: base64DataUrl,
+        labelThumbnail: base64DataUrl,
+        scannedAt: new Date().toISOString(),
+        aiProvider: `Groq Vision (${modelName})`
+      };
+
+    } catch (err) {
+      if (err.message.includes('Chave da API Groq inválida')) {
+        throw err;
+      }
+      lastError = err;
     }
-    if (response.status === 413) {
-      throw new Error('Foto muito grande. Tente tirar uma foto de menor resolução.');
-    }
-    throw new Error(`Groq API Error: ${errMsg}`);
   }
 
-  const data = await response.json();
-  const rawContent = data.choices?.[0]?.message?.content;
-  if (!rawContent) throw new Error('A IA Groq respondeu com conteúdo vazio.');
-
-  let cleanJsonString = rawContent.trim();
-  
-  // Trata blocos de código Markdown ```json ... ``` se a IA incluir
-  if (cleanJsonString.includes('```')) {
-    cleanJsonString = cleanJsonString.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '').trim();
-  }
-
-  // Tenta extrair a primeira estrutura JSON válida { ... } da resposta
-  const firstBrace = cleanJsonString.indexOf('{');
-  const lastBrace = cleanJsonString.lastIndexOf('}');
-  if (firstBrace !== -1 && lastBrace !== -1) {
-    cleanJsonString = cleanJsonString.slice(firstBrace, lastBrace + 1);
-  }
-
-  let parsed = {};
-  try {
-    parsed = JSON.parse(cleanJsonString);
-  } catch (parseErr) {
-    console.error('Erro ao converter JSON da Groq. Resposta bruta:', rawContent);
-    throw new Error('A IA não conseguiu interpretar o rótulo. Envie uma foto mais nítida e iluminada da garrafa.');
-  }
-
-  return {
-    id: `groq-${Date.now()}`,
-    ...parsed,
-    type: parsed.type || 'Red',
-    image: base64DataUrl,
-    labelThumbnail: base64DataUrl,
-    scannedAt: new Date().toISOString(),
-    aiProvider: 'Groq Llama 3.2 Vision Real'
-  };
+  throw lastError || new Error('Nenhum modelo de visão computacional da Groq está disponível no momento.');
 }
 
 /**
  * Redimensiona e comprime a foto via Canvas para no máximo 1024px.
- * Reduz a imagem de ~8MB para ~150KB, garantindo envio ultrarrápido sem estourar o limite da API.
  */
 function compressImageForVision(fileOrBase64, maxWidth = 1024, maxHeight = 1024, quality = 0.85) {
   return new Promise((resolve, reject) => {
