@@ -39,14 +39,14 @@ function AppInner() {
 
   const handleStartScan = async (inputData) => {
     setIsScanning(true);
-    setScanProgress({ stage: 'init', percent: 5, text: 'Carregando rótulo…' });
+    setScanProgress({ stage: 'init', percent: 5, text: 'Otimizando rótulo…' });
     try {
       const wine = await scanWineLabel(inputData, setScanProgress);
       setScannedWine(wine);
       setActiveTab('details');
     } catch (err) {
       console.error(err);
-      alert('Erro ao processar a imagem. Tente outro ângulo.');
+      alert(err.message || 'Erro ao processar a imagem.');
     } finally {
       setIsScanning(false);
     }
