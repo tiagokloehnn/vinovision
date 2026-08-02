@@ -2,13 +2,12 @@ import { SAMPLE_WINES } from '../data/sampleWines';
 import { supabase } from '../lib/supabase';
 
 /**
- * Busca TODAS as chaves de API ativas configuradas EXPLICITAMENTE pelo Admin.
- * NUNCA faz fallback para variáveis de ambiente hardcoded (.env).
+ * Busca TODAS as chaves de API ativas configuradas pelo Admin, localStorage ou variáveis de ambiente.
  */
 export async function getAllActiveApiKeys() {
   const activeKeys = [];
 
-  // 1. Busca apenas chaves salvas na tabela app_config do Supabase
+  // 1. Busca chaves salvas na tabela app_config do Supabase
   try {
     const { data } = await supabase
       .from('app_config')
@@ -45,6 +44,21 @@ export async function getAllActiveApiKeys() {
   }
   if (openaiLocal && !activeKeys.some(k => k.keyName === 'openai_api_key')) {
     activeKeys.push({ keyName: 'openai_api_key', value: openaiLocal });
+  }
+
+  // 3. Fallback para variáveis de ambiente (VITE_GROQ_API_KEY, VITE_GEMINI_API_KEY, etc.)
+  const envGroq = (import.meta.env.VITE_GROQ_API_KEY || '').trim();
+  const envGemini = (import.meta.env.VITE_GEMINI_API_KEY || '').trim();
+  const envOpenAI = (import.meta.env.VITE_OPENAI_API_KEY || '').trim();
+
+  if (envGroq && !activeKeys.some(k => k.keyName === 'groq_api_key')) {
+    activeKeys.push({ keyName: 'groq_api_key', value: envGroq });
+  }
+  if (envGemini && !activeKeys.some(k => k.keyName === 'gemini_api_key')) {
+    activeKeys.push({ keyName: 'gemini_api_key', value: envGemini });
+  }
+  if (envOpenAI && !activeKeys.some(k => k.keyName === 'openai_api_key')) {
+    activeKeys.push({ keyName: 'openai_api_key', value: envOpenAI });
   }
 
   return activeKeys;
@@ -143,13 +157,13 @@ Retorne EXCLUSIVAMENTE um objeto JSON válido (sem texto antes/depois ou markdow
   "name": "Nome do vinho conforme rótulo",
   "winery": "Nome da Vinícola / Produtor",
   "vintage": "Ano da Safra (ex: 2019 ou 'N.V.' se não houver)",
-  "type": "Red",
-  "typeName": "Tipo de Vinho (ex: Tinto Reserva, Branco Seco, Espumante Brut)",
+  "type": "Red | White | Rose | Sparkling | Dessert",
+  "typeName": "Tipo de Vinho (ex: Vinho Rosé Suave, Tinto Reserva, Branco Seco, Espumante Brut)",
   "country": "País de origem",
   "flagEmoji": "Emoji da bandeira do país",
   "region": "Região Vitivinícola",
   "grapes": ["Casta 1", "Casta 2"],
-  "alcohol": "Teor alcoólico (ex: 13.5%)",
+  "alcohol": "Teor alcoólico (ex: 9.5%)",
   "rating": 4.5,
   "reviewsCount": 240,
   "priceEstimate": "Estimativa de preço em R$",
@@ -306,29 +320,29 @@ async function analyzeWineWithGroq(base64DataUrl, apiKey, onProgress, isRetry = 
 
   candidateModels = candidateModels.filter((v, i, a) => a.indexOf(v) === i);
 
-  const promptText = `Você é um mestre sommelier. Analise esta foto de rótulo de vinho e retorne EXCLUSIVAMENTE um objeto JSON válido em português:
+  const promptText = `Você é um mestre sommelier e especialista em visão computacional. Analise cuidadosamente a foto deste rótulo de vinho e retorne EXCLUSIVAMENTE um objeto JSON válido em português:
 {
-  "name": "Nome do vinho",
-  "winery": "Vinícola / Produtor",
-  "vintage": "Ano da Safra",
-  "type": "Red",
-  "typeName": "Tipo de Vinho",
+  "name": "Nome exato do vinho conforme o rótulo",
+  "winery": "Nome da Vinícola / Produtor",
+  "vintage": "Ano da Safra (ou 'N.V.' se não houver)",
+  "type": "Red | White | Rose | Sparkling | Dessert",
+  "typeName": "Tipo de Vinho (ex: Vinho Rosé Suave, Tinto Reserva, Branco Seco, Espumante Brut)",
   "country": "País de origem",
-  "flagEmoji": "Emoji da bandeira",
+  "flagEmoji": "Emoji da bandeira do país",
   "region": "Região Vitivinícola",
-  "grapes": ["Casta 1"],
-  "alcohol": "Teor alcoólico",
+  "grapes": ["Casta 1", "Casta 2"],
+  "alcohol": "Teor alcoólico (ex: 9.5%)",
   "rating": 4.5,
   "reviewsCount": 240,
   "priceEstimate": "Estimativa de preço em R$",
-  "serveTemp": "Temperatura ideal",
-  "decantTime": "Tempo de decantação",
-  "profile": { "body": 4, "tannin": 3, "acidity": 3, "sweetness": 1 },
+  "serveTemp": "Temperatura ideal de serviço (ex: 8°C - 10°C para rosé/branco, 16°C - 18°C para tinto)",
+  "decantTime": "Tempo de decantação ou 'Não requer decantação'",
+  "profile": { "body": 2, "tannin": 1, "acidity": 4, "sweetness": 3 },
   "aromas": [{ "name": "Nome do aroma", "icon": "Emoji" }],
   "foodPairings": [{ "title": "Prato Sugerido", "category": "Categoria", "icon": "Emoji", "description": "Explicação" }],
-  "description": "Descrição sensorial detalhada",
-  "sommelierNote": "Nota técnica do sommelier",
-  "awards": ["Prêmio"]
+  "description": "Descrição sensorial detalhada do vinho referente a este rótulo específico",
+  "sommelierNote": "Nota técnica do sommelier sobre harmonização e perfil do vinho",
+  "awards": ["Prêmio se houver"]
 }`;
 
   let lastError = null;
