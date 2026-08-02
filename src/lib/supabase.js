@@ -1,18 +1,11 @@
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-
-if (!supabaseUrl || !supabaseAnonKey) {
-  console.warn(
-    '[VinoVision] Variáveis de ambiente do Supabase não configuradas.\n' +
-    'Crie um arquivo .env.local com VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY.'
-  );
-}
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://godprvhlyptnzonotejj.supabase.co';
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdvZHBydmhseXB0bnpvbm90ZWpqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU1OTMyMDksImV4cCI6MjEwMTE2OTIwOX0.ImiUZBPRjcBf7yV64iiw5W-4sSXGV1W1UFjhMNx5mLc';
 
 export const supabase = createClient(
-  supabaseUrl || 'https://placeholder.supabase.co',
-  supabaseAnonKey || 'placeholder-key',
+  supabaseUrl,
+  supabaseAnonKey,
   {
     auth: {
       persistSession: true,
