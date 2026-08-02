@@ -29,10 +29,18 @@ export function useCellar() {
       .then(({ data, error }) => {
         if (error) {
           console.error('[Adega] Erro ao carregar:', error.message);
+          setCellarWines([]);
+        } else if (Array.isArray(data)) {
+          setCellarWines(data.map(row => ({ ...(row?.wine_data || {}), _rowId: row.id })));
         } else {
-          // Cada linha tem { id, wine_id, wine_data, created_at }
-          setCellarWines(data.map(row => ({ ...row.wine_data, _rowId: row.id })));
+          setCellarWines([]);
         }
+      })
+      .catch(err => {
+        console.error('[Adega] Erro inesperado ao carregar:', err);
+        setCellarWines([]);
+      })
+      .finally(() => {
         setLoading(false);
       });
   }, [user]);

@@ -22,13 +22,13 @@ function AppInner() {
   const [isScanning, setIsScanning]     = useState(false);
   const [scanProgress, setScanProgress] = useState({ stage: 'init', percent: 0, text: '' });
 
-  // Enquanto carrega a sessão, mostra um loader mínimo
+  // Enquanto carrega a sessão, mostra um loader elegante com fallbacks nativos de CSS
   if (authLoading) {
     return (
-      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-dark)' }}>
-        <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 'var(--space-4)' }}>
-          <div style={{ width: 'var(--text-3xl)', height: 'var(--text-3xl)', border: '2px solid var(--border-clean)', borderTopColor: 'var(--gold-accent)', borderRadius: '99px', animation: 'spin 0.8s linear infinite' }} />
-          <p style={{ fontSize: 'var(--text-sm)', color: 'var(--text-muted)' }}>Carregando…</p>
+      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0b0508', color: '#f5f0f3' }}>
+        <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem' }}>
+          <div style={{ width: '42px', height: '42px', border: '3px solid rgba(255, 255, 255, 0.1)', borderTopColor: '#d4af37', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+          <p style={{ fontSize: '0.9rem', color: '#9e8e96', fontFamily: 'sans-serif' }}>Carregando VinoVision AI…</p>
         </div>
       </div>
     );

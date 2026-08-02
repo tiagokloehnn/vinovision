@@ -8,12 +8,18 @@ export function AuthProvider({ children }) {
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Carrega perfil do usuário da tabela public.profiles
+  // Previne buscas duplicadas concorrentes do mesmo perfil
+  const fetchingIdRef = React.useRef(null);
+
   const fetchProfile = async (userId) => {
     if (!userId) {
       setProfile(null);
       return;
     }
+    // Se já estamos buscando o perfil deste mesmo userId, evita chamada duplicada
+    if (fetchingIdRef.current === userId) return;
+    fetchingIdRef.current = userId;
+
     try {
       const { data, error } = await supabase
         .from('profiles')
@@ -22,7 +28,10 @@ export function AuthProvider({ children }) {
         .single();
       
       if (error) {
-        console.error('[AuthContext] Erro ao buscar perfil:', error.message);
+        // Ignora erros de cancelamento de requisição pelo cliente (ex: HTTP 499 / AbortError)
+        if (!error.message?.includes('abort') && !error.message?.includes('canceled')) {
+          console.error('[AuthContext] Erro ao buscar perfil:', error.message);
+        }
         setProfile({ role: 'USER_COMMON' });
       } else {
         setProfile(data);
@@ -30,33 +39,54 @@ export function AuthProvider({ children }) {
     } catch (err) {
       console.error('[AuthContext] Erro inesperado ao buscar perfil:', err);
       setProfile({ role: 'USER_COMMON' });
+    } finally {
+      fetchingIdRef.current = null;
     }
   };
 
   useEffect(() => {
-    // Carrega a sessão já existente ao iniciar
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      const currentUser = session?.user ?? null;
-      setUser(currentUser);
-      if (currentUser) {
-        fetchProfile(currentUser.id).finally(() => setLoading(false));
-      } else {
+    let isMounted = true;
+
+    // Timeout de segurança (3.5s): garante liberação do loading se a rede oscilar
+    const safetyTimer = setTimeout(() => {
+      if (isMounted) {
         setLoading(false);
       }
-    });
+    }, 3500);
 
-    // Escuta mudanças de autenticação (login, logout, refresh)
-    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
-      const currentUser = session?.user ?? null;
-      setUser(currentUser);
-      if (currentUser) {
-        fetchProfile(currentUser.id);
-      } else {
-        setProfile(null);
+    // Escuta eventos de auth do Supabase (trata INITIAL_SESSION, SIGNED_IN, SIGNED_OUT, etc)
+    let listener = null;
+    try {
+      const { data } = supabase.auth.onAuthStateChange(async (_event, session) => {
+        if (!isMounted) return;
+        const currentUser = session?.user ?? null;
+        setUser(currentUser);
+
+        if (currentUser) {
+          await fetchProfile(currentUser.id);
+        } else {
+          setProfile(null);
+        }
+        if (isMounted) setLoading(false);
+        clearTimeout(safetyTimer);
+      });
+      listener = data;
+    } catch (err) {
+      console.error('[AuthContext] Erro ao registrar escutador de auth:', err);
+      if (isMounted) setLoading(false);
+    }
+
+    return () => {
+      isMounted = false;
+      clearTimeout(safetyTimer);
+      if (listener?.subscription?.unsubscribe) {
+        try {
+          listener.subscription.unsubscribe();
+        } catch (e) {
+          // ignora falhas de cleanup
+        }
       }
-    });
-
-    return () => listener.subscription.unsubscribe();
+    };
   }, []);
 
   // Recarrega o perfil manualmente se necessário
