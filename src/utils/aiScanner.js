@@ -144,19 +144,47 @@ export async function scanWineLabel(imageInput, onProgress = () => {}) {
 }
 
 /**
- * Envia a imagem do rótulo para os modelos do Google Gemini (testando gemini-2.5-flash, gemini-2.0-flash, gemini-1.5-flash, etc.)
+ * Envia a imagem do rótulo para os modelos do Google Gemini
  */
 async function analyzeWineWithGemini(base64DataUrl, apiKey, onProgress) {
   const pureBase64 = base64DataUrl.split(',')[1] || base64DataUrl;
+  const cleanKey = apiKey.trim();
 
-  // Lista ordenada por prioridade nos modelos Gemini Flash mais recentes e rápidos
-  const candidateGeminiModels = [
+  // Modelos padrão recomendados para visão e OCR
+  let candidateGeminiModels = [
     'gemini-2.5-flash',
     'gemini-2.0-flash',
     'gemini-1.5-flash',
     'gemini-2.0-flash-lite',
     'gemini-1.5-pro'
   ];
+
+  // Tenta obter dinamicamente os modelos ativos habilitados para a chave
+  try {
+    const listRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${cleanKey}`);
+    if (!listRes.ok) {
+      const errJson = await listRes.json().catch(() => ({}));
+      const msg = errJson.error?.message || '';
+      if (listRes.status === 400 && (msg.toLowerCase().includes('api key not valid') || msg.toLowerCase().includes('invalid'))) {
+        throw new Error('Chave do Google Gemini inválida. Verifique se copiou a chave completa no Google AI Studio (https://aistudio.google.com/app/apikey).');
+      }
+    } else {
+      const listData = await listRes.json();
+      if (listData.models && listData.models.length > 0) {
+        const available = listData.models
+          .filter(m => m.supportedGenerationMethods?.includes('generateContent'))
+          .map(m => m.name.replace(/^models\//, ''))
+          .filter(name => name.includes('flash') || name.includes('pro') || name.includes('gemini'));
+        if (available.length > 0) {
+          candidateGeminiModels = Array.from(new Set([...available, ...candidateGeminiModels]));
+        }
+      }
+    }
+  } catch (err) {
+    if (err.message?.includes('Google Gemini inválida')) {
+      throw err;
+    }
+  }
 
   const promptText = `Você é um mestre sommelier de classe mundial e especialista em visão computacional e OCR de rótulos de vinhos.
 Examine cuidadosamente todos os detalhes visuais e textos desta foto de rótulo de vinho.
@@ -193,7 +221,8 @@ Retorne EXCLUSIVAMENTE um objeto JSON válido (sem texto adicional antes ou depo
     try {
       console.log(`[VinoVision IA] Enviando imagem para Google Gemini (${modelName})…`);
 
-      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey.trim()}`, {
+      const cleanModelName = modelName.replace(/^models\//, '');
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${cleanModelName}:generateContent?key=${cleanKey}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -221,14 +250,22 @@ Retorne EXCLUSIVAMENTE um objeto JSON válido (sem texto adicional antes ou depo
         const errJson = await response.json().catch(() => ({}));
         const errMsg = errJson.error?.message || `HTTP ${response.status} ${response.statusText}`;
 
-        console.warn(`[Gemini AI] Modelo ${modelName} retornou erro:`, errMsg);
+        console.warn(`[Gemini AI] Modelo ${cleanModelName} retornou erro:`, errMsg);
 
-        if (response.status === 429 || errMsg.toLowerCase().includes('quota') || errMsg.toLowerCase().includes('rate limit') || response.status === 404) {
-          lastError = new Error(`Cota ou modelo indisponível no Gemini ${modelName}: ${errMsg}`);
+        if (response.status === 400 && (errMsg.toLowerCase().includes('api key not valid') || errMsg.toLowerCase().includes('invalid api key'))) {
+          throw new Error('Chave do Google Gemini inválida. Verifique a chave no Google AI Studio (https://aistudio.google.com/app/apikey).');
+        }
+
+        if (response.status === 429 || errMsg.toLowerCase().includes('quota') || errMsg.toLowerCase().includes('rate limit')) {
+          lastError = new Error(`Cota excedida no modelo Gemini ${cleanModelName}.`);
           continue;
         }
 
-        throw new Error(`Google Gemini Error (${modelName}): ${errMsg}`);
+        if (response.status === 404 || errMsg.toLowerCase().includes('not found')) {
+          continue;
+        }
+
+        throw new Error(`Google Gemini Error (${cleanModelName}): ${errMsg}`);
       }
 
       const data = await response.json();
@@ -248,10 +285,13 @@ Retorne EXCLUSIVAMENTE um objeto JSON válido (sem texto adicional antes ou depo
         image: base64DataUrl,
         labelThumbnail: base64DataUrl,
         scannedAt: new Date().toISOString(),
-        aiProvider: `Google Gemini (${modelName})`
+        aiProvider: `Google Gemini (${cleanModelName})`
       };
 
     } catch (err) {
+      if (err.message?.includes('Google Gemini inválida')) {
+        throw err;
+      }
       lastError = err;
     }
   }

@@ -86,68 +86,81 @@ export default function AdminPage() {
       console.warn('[AdminPage] Tabela app_config indisponível:', err);
     }
 
+    const geminiVal = dbKeys.find(k => k.key === 'gemini_api_key' || k.key.includes('gemini'))?.value
+      || localStorage.getItem('vinovision_gemini_key')
+      || (import.meta.env.VITE_GEMINI_API_KEY || '')
+      || '';
+
+    const openaiVal = dbKeys.find(k => k.key === 'openai_api_key' || k.key.includes('openai'))?.value
+      || localStorage.getItem('vinovision_openai_key')
+      || (import.meta.env.VITE_OPENAI_API_KEY || '')
+      || '';
+
+    const wineVal = dbKeys.find(k => k.key === 'wineapi_key' || k.key.includes('wine'))?.value
+      || localStorage.getItem('vinovision_wineapi_key')
+      || '';
+
+    const groqVal = dbKeys.find(k => k.key === 'groq_api_key' || k.key.includes('groq'))?.value
+      || localStorage.getItem('vinovision_groq_key')
+      || (import.meta.env.VITE_GROQ_API_KEY || '')
+      || '';
+
+    const standardList = [
+      {
+        id: 'gemini_api_key',
+        keyName: 'gemini_api_key',
+        name: 'Google Gemini 2.5 Flash',
+        description: 'IA recomendada — 100% gratuita no Google AI Studio (aistudio.google.com/app/apikey)',
+        value: geminiVal.trim(),
+        badge: 'Recomendado',
+        type: 'gemini'
+      },
+      {
+        id: 'openai_api_key',
+        keyName: 'openai_api_key',
+        name: 'OpenAI GPT-4o Mini',
+        description: 'IA de Visão Computacional da OpenAI',
+        value: openaiVal.trim(),
+        badge: 'OpenAI',
+        type: 'openai'
+      },
+      {
+        id: 'wineapi_key',
+        keyName: 'wineapi_key',
+        name: 'wineAPI.io Integration',
+        description: 'API especialista em reconhecimento visual e catálogo global de vinhos',
+        value: wineVal.trim(),
+        badge: 'wineAPI',
+        type: 'wineapi'
+      },
+      {
+        id: 'groq_api_key',
+        keyName: 'groq_api_key',
+        name: 'Groq AI Vision',
+        description: 'Visão computacional ultra-rápida via Groq Cloud',
+        value: groqVal.trim(),
+        badge: 'Groq',
+        type: 'groq'
+      }
+    ];
+
+    // Inclui chaves personalizadas adicionais cadastradas no banco
     dbKeys.forEach(item => {
       if (!item.value || !item.value.trim()) return;
-
-      let name = 'Conexão Personalizada';
-      let desc = `Integração (${item.key})`;
-      let type = 'custom';
-      let badge = 'Ativa';
-
-      if (item.key === 'wineapi_key' || item.key.includes('wine')) {
-        name = 'wineAPI.io Integration';
-        desc = 'API especialista em reconhecimento visual e banco de vinhos (wineAPI.io)';
-        type = 'wineapi';
-        badge = 'wineAPI';
-      } else if (item.key === 'groq_api_key' || item.key.includes('groq')) {
-        name = 'Groq AI Vision';
-        desc = 'Visão computacional via modelos Llama 3.2 Vision';
-        type = 'groq';
-        badge = 'Groq';
-      } else if (item.key === 'gemini_api_key' || item.key.includes('gemini')) {
-        name = 'Google Gemini 2.0 Flash';
-        desc = 'IA de Visão Computacional ultra-rápida via Google AI Studio';
-        type = 'gemini';
-        badge = 'Google Gemini';
-      } else if (item.key === 'openai_api_key' || item.key.includes('openai')) {
-        name = 'OpenAI GPT-4o Mini';
-        desc = 'IA de Visão Computacional da OpenAI';
-        type = 'openai';
-        badge = 'OpenAI';
+      if (!standardList.some(c => c.keyName === item.key)) {
+        standardList.push({
+          id: item.key,
+          keyName: item.key,
+          name: `Integração Customizada (${item.key})`,
+          description: 'Conexão adicional configurada pelo Administrador',
+          value: item.value.trim(),
+          badge: 'Personalizada',
+          type: 'custom'
+        });
       }
-
-      list.push({
-        id: item.key,
-        keyName: item.key,
-        name: name,
-        description: desc,
-        value: item.value.trim(),
-        badge: badge,
-        type: type
-      });
     });
 
-    const wineLocal = (localStorage.getItem('vinovision_wineapi_key') || '').trim();
-    if (wineLocal && !list.some(c => c.keyName === 'wineapi_key')) {
-      list.push({ id: 'wineapi_key', keyName: 'wineapi_key', name: 'wineAPI.io Integration', description: 'Salvo localmente no navegador', value: wineLocal, badge: 'Local', type: 'wineapi' });
-    }
-
-    const groqLocal = (localStorage.getItem('vinovision_groq_key') || '').trim();
-    if (groqLocal && !list.some(c => c.keyName === 'groq_api_key')) {
-      list.push({ id: 'groq_api_key', keyName: 'groq_api_key', name: 'Groq AI Vision', description: 'Salvo localmente no navegador', value: groqLocal, badge: 'Local', type: 'groq' });
-    }
-
-    const geminiLocal = (localStorage.getItem('vinovision_gemini_key') || '').trim();
-    if (geminiLocal && !list.some(c => c.keyName === 'gemini_api_key')) {
-      list.push({ id: 'gemini_api_key', keyName: 'gemini_api_key', name: 'Google Gemini 2.0 Flash', description: 'Salvo localmente no navegador', value: geminiLocal, badge: 'Local', type: 'gemini' });
-    }
-
-    const openaiLocal = (localStorage.getItem('vinovision_openai_key') || '').trim();
-    if (openaiLocal && !list.some(c => c.keyName === 'openai_api_key')) {
-      list.push({ id: 'openai_api_key', keyName: 'openai_api_key', name: 'OpenAI GPT-4o Mini', description: 'Salvo localmente no navegador', value: openaiLocal, badge: 'Local', type: 'openai' });
-    }
-
-    setConnectionsList(list);
+    setConnectionsList(standardList);
     setLoadingConnections(false);
   };
 
@@ -196,7 +209,7 @@ export default function AdminPage() {
 
   const handleSaveConnectionItem = async (item) => {
     const keyName = item.keyName;
-    const val = item.value.trim();
+    const val = (item.value || '').trim();
 
     setSavingMap(prev => ({ ...prev, [keyName]: true }));
 
@@ -220,9 +233,9 @@ export default function AdminPage() {
         .upsert({ key: keyName, value: val, updated_at: new Date().toISOString() });
 
       if (error) {
-        showToast('success', `Conexão "${item.name}" salva localmente!`);
+        showToast('success', `Conexão "${item.name}" salva no navegador!`);
       } else {
-        showToast('success', `Conexão "${item.name}" salva no banco de dados!`);
+        showToast('success', `Conexão "${item.name}" sincronizada com sucesso!`);
       }
     } catch {
       showToast('success', `Conexão salva no navegador!`);
