@@ -182,22 +182,22 @@ export default function WineDetails({
             </span>
           </div>
 
-          {/* Nome */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-1)' }}>
-            <p style={{ fontSize: 'var(--text-xs)', textTransform: 'uppercase', letterSpacing: '0.14em', fontWeight: 700, color: 'var(--gold-accent)' }}>
+          {/* Nome e Vinícola com Espaçamento Amplo */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+            <p style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.12em', fontWeight: 700, color: 'var(--gold-accent)' }}>
               {wine.winery}
             </p>
-            <h1 style={{ fontFamily: 'var(--font-heading)', fontSize: 'var(--text-4xl)', lineHeight: 1.15, color: 'var(--text-main)', wordBreak: 'break-word', fontWeight: 700 }}>
+            <h1 style={{ fontFamily: 'var(--font-heading)', fontSize: 'clamp(1.5rem, 5vw, 2.5rem)', lineHeight: 1.3, color: 'var(--text-main)', wordBreak: 'break-word', fontWeight: 700 }}>
               {wine.name}
             </h1>
           </div>
 
           {/* Descrição Geral / O que falam sobre ele */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
-            <p style={{ fontSize: 'var(--text-xs)', textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--text-muted)', fontWeight: 700 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '4px' }}>
+            <p style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.09em', color: 'var(--text-muted)', fontWeight: 700 }}>
               Sobre Este Vinho (Ficha & Opinião Técnica):
             </p>
-            <p style={{ fontSize: 'var(--text-base)', lineHeight: 1.8, color: 'var(--text-secondary)', wordBreak: 'break-word' }}>
+            <p style={{ fontSize: '0.95rem', lineHeight: 1.75, color: 'var(--text-secondary)', wordBreak: 'break-word' }}>
               {wine.description}
             </p>
           </div>

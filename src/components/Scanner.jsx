@@ -88,11 +88,11 @@ export default function Scanner({ onScanStart, isScanning, scanProgress }) {
           <Sparkles style={{ width: 'var(--text-sm)', height: 'var(--text-sm)', color: '#B88D22' }} />
           Sommelier de Precisão IA
         </span>
-        <h1 style={{ fontFamily: 'var(--font-heading)', fontSize: 'var(--text-5xl)', color: 'var(--text-main)', lineHeight: 1.15, wordBreak: 'break-word' }}>
-          Identifique Qualquer Vinho <br />
+        <h1 style={{ fontFamily: 'var(--font-heading)', fontSize: 'clamp(1.75rem, 5.5vw, 3rem)', color: 'var(--text-main)', lineHeight: 1.26, wordBreak: 'break-word', fontWeight: 700 }}>
+          Identifique Qualquer Vinho{' '}
           <span style={{ color: 'var(--wine-primary)' }}>Pela Foto do Rótulo</span>
         </h1>
-        <p style={{ fontSize: 'var(--text-base)', color: 'var(--text-secondary)', lineHeight: 1.7, maxWidth: '34rem' }}>
+        <p style={{ fontSize: 'clamp(0.9rem, 2.5vw, 1.05rem)', color: 'var(--text-secondary)', lineHeight: 1.7, maxWidth: '34rem' }}>
           Fotografe ou envie a imagem da garrafa para obter ficha técnica completa, safra, notas de degustação e harmonizações exclusivas.
         </p>
 

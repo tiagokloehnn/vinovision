@@ -102,7 +102,7 @@ export default function SharedCellarModal({
       >
         {/* ── HEADER ── */}
         <div
-          className="flex items-center justify-between p-6"
+          className="flex items-center justify-between p-4 sm:p-6"
           style={{
             borderBottom: '1px solid var(--border-clean)',
             background: 'linear-gradient(135deg, #FAF8F5 0%, #FFFFFF 100%)'
@@ -111,8 +111,8 @@ export default function SharedCellarModal({
           <div className="flex items-center gap-3">
             <div
               style={{
-                width: '42px',
-                height: '42px',
+                width: '40px',
+                height: '40px',
                 borderRadius: '12px',
                 background: '#FDF2F4',
                 border: '1px solid rgba(114,27,41,0.2)',
@@ -122,13 +122,13 @@ export default function SharedCellarModal({
                 flexShrink: 0
               }}
             >
-              <Users style={{ width: '22px', height: '22px', color: 'var(--wine-primary)' }} />
+              <Users style={{ width: '20px', height: '20px', color: 'var(--wine-primary)' }} />
             </div>
             <div>
-              <h2 style={{ fontFamily: 'var(--font-heading)', fontSize: '1.35rem', color: 'var(--text-main)', fontWeight: 700 }}>
+              <h2 style={{ fontFamily: 'var(--font-heading)', fontSize: 'clamp(1.15rem, 3.5vw, 1.35rem)', color: 'var(--text-main)', fontWeight: 700, lineHeight: 1.3 }}>
                 Adegas & Confrarias
               </h2>
-              <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+              <p style={{ fontSize: '0.775rem', color: 'var(--text-secondary)', lineHeight: 1.4, marginTop: '2px' }}>
                 Gerencie suas adegas pessoais e coleções compartilhadas
               </p>
             </div>
@@ -154,7 +154,7 @@ export default function SharedCellarModal({
         </div>
 
         {/* ── TABS ── */}
-        <div className="flex border-b border-black/5 bg-[#FAF8F5] px-6 gap-2 overflow-x-auto">
+        <div className="flex border-b border-black/5 bg-[#FAF8F5] px-4 sm:px-6 gap-2 overflow-x-auto">
           {[
             { id: 'list',   label: 'Minhas Adegas', icon: Wine },
             { id: 'create', label: 'Criar Nova',    icon: Plus },
