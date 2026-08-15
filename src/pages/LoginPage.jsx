@@ -65,21 +65,21 @@ export default function LoginPage() {
   };
 
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 'var(--space-5)', background: 'var(--bg-canvas)' }}>
+    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 'clamp(1rem, 3vw, 2rem)', background: 'var(--bg-canvas)' }}>
 
       {/* Gradiente sutil de fundo */}
       <div style={{ position: 'fixed', inset: 0, backgroundImage: 'radial-gradient(circle at 20% 15%, rgba(184,141,34,0.08) 0%, transparent 50%), radial-gradient(circle at 80% 85%, rgba(114,27,41,0.06) 0%, transparent 50%)', pointerEvents: 'none' }} />
 
-      <div className="glass-card animate-fadeIn" style={{ maxWidth: '28rem', width: '100%', padding: 'var(--space-10)', display: 'flex', flexDirection: 'column', gap: 'var(--space-6)', position: 'relative', background: '#FFFFFF', border: '1px solid rgba(184,141,34,0.25)', boxShadow: '0 25px 50px -12px rgba(35,20,25,0.12)' }}>
+      <div className="glass-card animate-fadeIn" style={{ maxWidth: 'min(28rem, 100%)', width: '100%', padding: 'clamp(1.5rem, 4vw, 2.5rem)', display: 'flex', flexDirection: 'column', gap: 'var(--space-5)', position: 'relative', background: '#FFFFFF', border: '1px solid rgba(184,141,34,0.25)', boxShadow: '0 25px 50px -12px rgba(35,20,25,0.12)' }}>
 
         {/* ── LOGO ── */}
         <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 'var(--space-3)' }}>
-          <div style={{ width: 'clamp(3.5rem,5vw,4rem)', height: 'clamp(3.5rem,5vw,4rem)', borderRadius: 'var(--radius-xl)', background: 'linear-gradient(135deg, #721B29, #4A0E1A)', border: '1px solid rgba(184,141,34,0.35)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 8px 20px rgba(114,27,41,0.25)' }}>
-            <Wine style={{ width: 'var(--text-2xl)', height: 'var(--text-2xl)', color: '#FDF8EB' }} />
+          <div style={{ width: 'clamp(3rem,5vw,3.75rem)', height: 'clamp(3rem,5vw,3.75rem)', borderRadius: 'var(--radius-xl)', background: 'linear-gradient(135deg, #721B29, #4A0E1A)', border: '1px solid rgba(184,141,34,0.35)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 8px 20px rgba(114,27,41,0.25)' }}>
+            <Wine style={{ width: 'var(--text-xl)', height: 'var(--text-xl)', color: '#FDF8EB' }} />
           </div>
           <div>
             <h1 style={{ fontFamily: 'var(--font-heading)', fontSize: 'var(--text-3xl)', color: 'var(--text-main)', lineHeight: 1.2, fontWeight: 700 }}>VinoVision AI</h1>
-            <p style={{ fontSize: 'var(--text-sm)', color: 'var(--text-secondary)', marginTop: 'var(--space-1)' }}>
+            <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-secondary)', marginTop: '2px' }}>
               {mode === 'login'    ? 'Acesse seu Sommelier Exclusivo' :
                mode === 'register' ? 'Crie sua conta pessoal'         :
                                      'Redefinir senha de acesso'}
@@ -89,12 +89,12 @@ export default function LoginPage() {
 
         {/* ── TABS LOGIN / CADASTRO ── */}
         {mode !== 'reset' && (
-          <div style={{ display: 'flex', background: '#F2EDE4', borderRadius: '99px', padding: '4px', gap: '4px' }}>
+          <div style={{ display: 'flex', background: '#F2EDE4', borderRadius: '99px', padding: '3px', gap: '3px' }}>
             {[['login', 'Entrar'], ['register', 'Criar Conta']].map(([m, label]) => {
               const isActive = mode === m;
               return (
                 <button key={m} onClick={() => { setMode(m); clearMsg(); }}
-                  style={{ flex: 1, padding: `var(--space-2) var(--space-4)`, borderRadius: '99px', fontSize: 'var(--text-sm)', fontWeight: 600, border: 'none', cursor: 'pointer', transition: 'all 0.2s', background: isActive ? 'var(--wine-primary)' : 'transparent', color: isActive ? '#FFFFFF' : 'var(--text-secondary)', boxShadow: isActive ? '0 2px 8px rgba(114,27,41,0.2)' : 'none' }}>
+                  style={{ flex: 1, padding: `var(--space-2) var(--space-3)`, borderRadius: '99px', fontSize: 'var(--text-xs)', fontWeight: 600, border: 'none', cursor: 'pointer', transition: 'all 0.2s', background: isActive ? 'var(--wine-primary)' : 'transparent', color: isActive ? '#FFFFFF' : 'var(--text-secondary)', boxShadow: isActive ? '0 2px 8px rgba(114,27,41,0.2)' : 'none' }}>
                   {label}
                 </button>
               );
@@ -111,11 +111,11 @@ export default function LoginPage() {
               E-mail
             </label>
             <div style={{ position: 'relative' }}>
-              <Mail style={{ position: 'absolute', left: 'var(--space-4)', top: '50%', transform: 'translateY(-50%)', width: 'var(--text-base)', height: 'var(--text-base)', color: 'var(--text-muted)', pointerEvents: 'none' }} />
+              <Mail style={{ position: 'absolute', left: 'var(--space-3)', top: '50%', transform: 'translateY(-50%)', width: 'var(--text-base)', height: 'var(--text-base)', color: 'var(--text-muted)', pointerEvents: 'none' }} />
               <input
                 type="email" value={email} onChange={e => setEmail(e.target.value)}
                 placeholder="seu@email.com" required
-                style={{ width: '100%', background: '#FAF8F5', border: '1px solid var(--border-clean)', borderRadius: 'var(--radius-md)', paddingLeft: 'calc(var(--space-4) + var(--text-base) + var(--space-2))', paddingRight: 'var(--space-4)', paddingTop: 'var(--space-3)', paddingBottom: 'var(--space-3)', fontSize: 'var(--text-sm)', color: 'var(--text-main)', outline: 'none', transition: 'border-color 0.2s', boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.02)' }}
+                style={{ width: '100%', background: '#FAF8F5', border: '1px solid var(--border-clean)', borderRadius: 'var(--radius-md)', paddingLeft: 'calc(var(--space-3) + var(--text-base) + var(--space-2))', paddingRight: 'var(--space-3)', paddingTop: 'var(--space-3)', paddingBottom: 'var(--space-3)', fontSize: 'var(--text-sm)', color: 'var(--text-main)', outline: 'none', transition: 'border-color 0.2s', boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.02)' }}
                 onFocus={e => e.target.style.borderColor = 'rgba(184,141,34,0.6)'}
                 onBlur={e => e.target.style.borderColor = 'var(--border-clean)'}
               />
@@ -135,16 +135,16 @@ export default function LoginPage() {
                 )}
               </div>
               <div style={{ position: 'relative' }}>
-                <Lock style={{ position: 'absolute', left: 'var(--space-4)', top: '50%', transform: 'translateY(-50%)', width: 'var(--text-base)', height: 'var(--text-base)', color: 'var(--text-muted)', pointerEvents: 'none' }} />
+                <Lock style={{ position: 'absolute', left: 'var(--space-3)', top: '50%', transform: 'translateY(-50%)', width: 'var(--text-base)', height: 'var(--text-base)', color: 'var(--text-muted)', pointerEvents: 'none' }} />
                 <input
                   type={showPass ? 'text' : 'password'} value={password} onChange={e => setPassword(e.target.value)}
                   placeholder={mode === 'register' ? 'Mínimo 6 caracteres' : '••••••••'} required
-                  style={{ width: '100%', background: '#FAF8F5', border: '1px solid var(--border-clean)', borderRadius: 'var(--radius-md)', paddingLeft: 'calc(var(--space-4) + var(--text-base) + var(--space-2))', paddingRight: 'calc(var(--space-4) + var(--text-xl))', paddingTop: 'var(--space-3)', paddingBottom: 'var(--space-3)', fontSize: 'var(--text-sm)', color: 'var(--text-main)', outline: 'none', transition: 'border-color 0.2s', boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.02)' }}
+                  style={{ width: '100%', background: '#FAF8F5', border: '1px solid var(--border-clean)', borderRadius: 'var(--radius-md)', paddingLeft: 'calc(var(--space-3) + var(--text-base) + var(--space-2))', paddingRight: 'calc(var(--space-3) + var(--text-xl))', paddingTop: 'var(--space-3)', paddingBottom: 'var(--space-3)', fontSize: 'var(--text-sm)', color: 'var(--text-main)', outline: 'none', transition: 'border-color 0.2s', boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.02)' }}
                   onFocus={e => e.target.style.borderColor = 'rgba(184,141,34,0.6)'}
                   onBlur={e => e.target.style.borderColor = 'var(--border-clean)'}
                 />
                 <button type="button" onClick={() => setShowPass(v => !v)}
-                  style={{ position: 'absolute', right: 'var(--space-4)', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', display: 'flex', alignItems: 'center' }}>
+                  style={{ position: 'absolute', right: 'var(--space-3)', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', display: 'flex', alignItems: 'center' }}>
                   {showPass ? <EyeOff style={{ width: 'var(--text-base)', height: 'var(--text-base)' }} /> : <Eye style={{ width: 'var(--text-base)', height: 'var(--text-base)' }} />}
                 </button>
               </div>
@@ -157,14 +157,14 @@ export default function LoginPage() {
               {message.type === 'error'
                 ? <AlertCircle style={{ width: 'var(--text-base)', height: 'var(--text-base)', color: '#DC2626', flexShrink: 0, marginTop: '2px' }} />
                 : <CheckCircle style={{ width: 'var(--text-base)', height: 'var(--text-base)', color: '#059669', flexShrink: 0, marginTop: '2px' }} />}
-              <p style={{ fontSize: 'var(--text-sm)', color: message.type === 'error' ? '#B91C1C' : '#047857', lineHeight: 1.6, fontWeight: 500 }}>
+              <p style={{ fontSize: 'var(--text-xs)', color: message.type === 'error' ? '#B91C1C' : '#047857', lineHeight: 1.6, fontWeight: 500 }}>
                 {message.text}
               </p>
             </div>
           )}
 
           {/* Botão Principal */}
-          <button type="submit" disabled={loading} className="btn-wine" style={{ width: '100%', justifyContent: 'center', opacity: loading ? 0.7 : 1, marginTop: 'var(--space-2)' }}>
+          <button type="submit" disabled={loading} className="btn-wine" style={{ width: '100%', justifyContent: 'center', opacity: loading ? 0.7 : 1, marginTop: 'var(--space-1)' }}>
             {loading ? 'Aguarde…' :
              mode === 'login'    ? 'Entrar na Conta'      :
              mode === 'register' ? 'Criar Conta Gratuita' :

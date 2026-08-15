@@ -12,10 +12,10 @@ export default function TastingRadar({ profile }) {
 
   return (
     <div className="glass-card w-full overflow-hidden h-full"
-      style={{ padding: 'var(--space-8)', display: 'flex', flexDirection: 'column', gap: 'var(--space-6)', background: '#FFFFFF' }}>
+      style={{ padding: 'clamp(1.25rem, 3vw, 2rem)', display: 'flex', flexDirection: 'column', gap: 'var(--space-5)', background: '#FFFFFF' }}>
 
       {/* Cabeçalho */}
-      <div style={{ paddingBottom: 'var(--space-4)', borderBottom: '1px solid var(--border-clean)', display: 'flex', flexDirection: 'column', gap: 'var(--space-1)' }}>
+      <div style={{ paddingBottom: 'var(--space-3)', borderBottom: '1px solid var(--border-clean)', display: 'flex', flexDirection: 'column', gap: 'var(--space-1)' }}>
         <span style={{ fontSize: 'var(--text-xs)', textTransform: 'uppercase', letterSpacing: '0.12em', fontWeight: 700, color: 'var(--gold-accent)' }}>
           Análise Sensorial
         </span>
@@ -25,25 +25,25 @@ export default function TastingRadar({ profile }) {
       </div>
 
       {/* Métricas */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-5)' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
         {metrics.map((item) => (
           <div key={item.label} style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
             {/* Rótulo + Descrição */}
             <div className="flex justify-between items-center">
-              <span style={{ fontFamily: 'var(--font-heading)', fontSize: 'var(--text-lg)', color: 'var(--text-main)', fontWeight: 600 }}>
+              <span style={{ fontFamily: 'var(--font-heading)', fontSize: 'var(--text-base)', color: 'var(--text-main)', fontWeight: 600 }}>
                 {item.label}
               </span>
-              <span style={{ fontSize: 'var(--text-xs)', fontWeight: 700, color: '#8C6810', background: '#FDF8EB', padding: `3px 12px`, borderRadius: '99px', border: '1px solid rgba(184,141,34,0.3)', whiteSpace: 'nowrap' }}>
+              <span style={{ fontSize: 'var(--text-xs)', fontWeight: 700, color: '#8C6810', background: '#FDF8EB', padding: `2px 10px`, borderRadius: '99px', border: '1px solid rgba(184,141,34,0.3)', whiteSpace: 'nowrap' }}>
                 {item.desc}
               </span>
             </div>
 
             {/* Barra de 5 segmentos */}
-            <div className="flex" style={{ gap: 'var(--space-2)', alignItems: 'center', width: '100%' }}>
+            <div className="flex" style={{ gap: 'var(--space-1)', alignItems: 'center', width: '100%' }}>
               {[1, 2, 3, 4, 5].map((step) => (
                 <div key={step} style={{
                   flex: 1,
-                  height: 'clamp(8px, 1vw, 11px)',
+                  height: 'clamp(7px, 1vw, 10px)',
                   borderRadius: '99px',
                   background: step <= item.value
                     ? 'linear-gradient(90deg, #721B29, #C5A059)'

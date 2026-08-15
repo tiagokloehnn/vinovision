@@ -30,7 +30,7 @@ export default function Navbar({ activeTab, setActiveTab, cellarCount }) {
   ];
 
   if (isAdmin) {
-    NAV.push({ id: 'admin', Icon: ShieldCheck, label: 'Painel Admin' });
+    NAV.push({ id: 'admin', Icon: ShieldCheck, label: 'Admin' });
   }
 
   const initials = user?.email?.substring(0, 2).toUpperCase() || 'VV';
@@ -60,8 +60,8 @@ export default function Navbar({ activeTab, setActiveTab, cellarCount }) {
   };
 
   return (
-    <header style={{ position: 'sticky', top: 0, zIndex: 100, padding: `var(--space-3) var(--space-6)`, background: 'rgba(255, 255, 255, 0.88)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', borderBottom: '1px solid var(--border-clean)', boxShadow: '0 4px 20px -5px rgba(35, 20, 25, 0.05)' }}>
-      <div className="w-full max-w-7xl mx-auto flex items-center justify-between" style={{ gap: 'var(--space-4)' }}>
+    <header style={{ position: 'sticky', top: 0, zIndex: 100, padding: `var(--space-3) var(--space-4)`, background: 'rgba(255, 255, 255, 0.9)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', borderBottom: '1px solid var(--border-clean)', boxShadow: '0 4px 20px -5px rgba(35, 20, 25, 0.05)' }}>
+      <div className="w-full max-w-7xl mx-auto flex items-center justify-between" style={{ gap: 'var(--space-3)' }}>
 
         {/* ── LOGO ── */}
         <div onClick={() => setActiveTab('scanner')} className="flex items-center" style={{ gap: 'var(--space-3)', cursor: 'pointer' }}>
@@ -111,7 +111,7 @@ export default function Navbar({ activeTab, setActiveTab, cellarCount }) {
         </nav>
 
         {/* ── BOTÕES DIREITA ── */}
-        <div className="flex items-center" style={{ gap: 'var(--space-3)' }}>
+        <div className="flex items-center" style={{ gap: 'var(--space-2)' }}>
           <button type="button" onClick={() => setActiveTab('scanner')} className="btn-gold hidden sm:inline-flex">
             <Sparkles style={{ width: 'var(--text-sm)', height: 'var(--text-sm)' }} />
             Escanear
@@ -123,8 +123,8 @@ export default function Navbar({ activeTab, setActiveTab, cellarCount }) {
               type="button"
               onClick={() => setShowUserMenu(v => !v)}
               style={{
-                width: 'clamp(2.3rem,3.8vw,2.75rem)',
-                height: 'clamp(2.3rem,3.8vw,2.75rem)',
+                width: 'clamp(2.2rem,3.8vw,2.75rem)',
+                height: 'clamp(2.2rem,3.8vw,2.75rem)',
                 borderRadius: '99px',
                 background: isAdmin
                   ? 'linear-gradient(135deg, #B88D22, #721B29)'
@@ -149,7 +149,7 @@ export default function Navbar({ activeTab, setActiveTab, cellarCount }) {
 
             {/* Dropdown do usuário */}
             {showUserMenu && (
-              <div className="glass-card animate-fadeIn" style={{ position: 'absolute', top: 'calc(100% + var(--space-2))', right: 0, minWidth: '16rem', padding: 'var(--space-4)', display: 'flex', flexDirection: 'column', gap: 'var(--space-3)', zIndex: 200, background: '#FFFFFF', boxShadow: '0 20px 45px -10px rgba(35,20,25,0.15)', border: '1px solid rgba(0,0,0,0.08)' }}>
+              <div className="glass-card animate-fadeIn" style={{ position: 'absolute', top: 'calc(100% + var(--space-2))', right: 0, width: 'min(18rem, calc(100vw - 2rem))', padding: 'var(--space-4)', display: 'flex', flexDirection: 'column', gap: 'var(--space-3)', zIndex: 200, background: '#FFFFFF', boxShadow: '0 20px 45px -10px rgba(35,20,25,0.15)', border: '1px solid rgba(0,0,0,0.08)' }}>
                 {/* Info usuário */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', paddingBottom: 'var(--space-3)', borderBottom: '1px solid var(--border-clean)' }}>
                   <div style={{ width: '2.5rem', height: '2.5rem', borderRadius: '99px', background: 'linear-gradient(135deg, #721B29, #B88D22)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 'var(--text-sm)', color: '#FFFFFF', flexShrink: 0, boxShadow: '0 2px 8px rgba(114,27,41,0.2)' }}>
@@ -204,18 +204,34 @@ export default function Navbar({ activeTab, setActiveTab, cellarCount }) {
       </div>
 
       {/* ── NAV MOBILE ── */}
-      <div className="flex sm:hidden justify-around flex-wrap" style={{ marginTop: 'var(--space-3)', paddingTop: 'var(--space-3)', borderTop: '1px solid var(--border-clean)', gap: 'var(--space-1)' }}>
-        {NAV.map(({ id, Icon, label }) => {
-          const isActive = activeTab === id;
-          return (
-            <button key={id} type="button" onClick={() => setActiveTab(id)} className="flex items-center font-semibold"
-              style={{ gap: 'var(--space-1)', padding: `var(--space-1) var(--space-3)`, borderRadius: '99px', fontSize: 'var(--text-xs)', border: 'none', cursor: 'pointer', background: isActive ? 'var(--wine-primary)' : 'transparent', color: isActive ? '#FFFFFF' : 'var(--text-secondary)' }}
-            >
-              <Icon style={{ width: 'var(--text-base)', height: 'var(--text-base)' }} />
-              {label}{id === 'cellar' && cellarCount > 0 ? ` (${cellarCount})` : ''}
-            </button>
-          );
-        })}
+      <div className="flex sm:hidden items-center justify-center w-full" style={{ marginTop: 'var(--space-2)', paddingTop: 'var(--space-1)' }}>
+        <nav className="flex items-center justify-center w-full" style={{ background: '#F2EDE4', padding: '3px', borderRadius: '99px', border: '1px solid rgba(0,0,0,0.06)', gap: '4px', maxWidth: '24rem' }}>
+          {NAV.map(({ id, Icon, label }) => {
+            const isActive = activeTab === id;
+            return (
+              <button
+                key={id}
+                type="button"
+                onClick={() => setActiveTab(id)}
+                className="flex-1 flex items-center justify-center font-semibold transition-all"
+                style={{
+                  gap: '6px',
+                  padding: '7px 12px',
+                  borderRadius: '99px',
+                  fontSize: 'var(--text-xs)',
+                  border: 'none',
+                  cursor: 'pointer',
+                  background: isActive ? 'var(--wine-primary)' : 'transparent',
+                  color: isActive ? '#FFFFFF' : 'var(--text-secondary)',
+                  boxShadow: isActive ? '0 3px 10px rgba(114,27,41,0.22)' : 'none'
+                }}
+              >
+                <Icon style={{ width: 'var(--text-sm)', height: 'var(--text-sm)', color: isActive ? '#FDF8EB' : 'inherit' }} />
+                {label}{id === 'cellar' && cellarCount > 0 ? ` (${cellarCount})` : ''}
+              </button>
+            );
+          })}
+        </nav>
       </div>
     </header>
   );

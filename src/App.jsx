@@ -60,7 +60,7 @@ function AppInner() {
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: 'var(--bg-canvas)', color: 'var(--text-main)', overflowX: 'hidden' }}>
       <Navbar activeTab={activeTab} setActiveTab={setActiveTab} cellarCount={cellarWines.length} />
 
-      <main style={{ flex: 1, width: '100%', maxWidth: '1280px', margin: '0 auto', padding: `var(--space-8) var(--space-5) var(--space-16)` }}>
+      <main style={{ flex: 1, width: '100%', maxWidth: '1280px', margin: '0 auto', padding: `var(--space-6) var(--space-4) var(--space-16)`, boxSizing: 'border-box' }}>
         {activeTab === 'scanner' && (
           <Scanner onScanStart={handleStartScan} isScanning={isScanning} scanProgress={scanProgress} />
         )}

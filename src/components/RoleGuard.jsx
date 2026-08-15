@@ -15,8 +15,8 @@ export default function RoleGuard({ allowedRoles, children, onFallback }) {
 
   if (!allowedRoles.includes(role)) {
     return (
-      <div className="w-full max-w-xl mx-auto animate-fadeIn" style={{ paddingTop: 'var(--space-12)', paddingBottom: 'var(--space-16)' }}>
-        <div className="glass-card text-center overflow-hidden" style={{ padding: 'var(--space-10)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 'var(--space-6)', background: '#FFFFFF', border: '1px solid rgba(220,38,38,0.2)' }}>
+      <div className="w-full max-w-xl mx-auto animate-fadeIn" style={{ paddingTop: 'var(--space-8)', paddingBottom: 'var(--space-12)' }}>
+        <div className="glass-card text-center overflow-hidden" style={{ padding: 'clamp(1.5rem, 4vw, 2.5rem)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 'var(--space-5)', background: '#FFFFFF', border: '1px solid rgba(220,38,38,0.2)' }}>
           <div style={{ width: 'clamp(3.5rem,6vw,4.5rem)', height: 'clamp(3.5rem,6vw,4.5rem)', borderRadius: '99px', background: '#FEF2F2', border: '1px solid #FECACA', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <ShieldAlert style={{ width: 'var(--text-4xl)', height: 'var(--text-4xl)', color: '#DC2626' }} />
           </div>
