@@ -6,7 +6,15 @@ import {
 } from 'lucide-react';
 import TastingRadar from './TastingRadar';
 
-export default function WineDetails({ wine, onBack, onSaveCellar, onUpdateReview, isSaved }) {
+export default function WineDetails({
+  wine,
+  onBack,
+  onSaveCellar,
+  onUpdateReview,
+  isSaved,
+  currentUserId,
+  activeCellar
+}) {
   if (!wine) return null;
 
   const [personalRating, setPersonalRating] = useState(wine.userRating || 0);
@@ -447,6 +455,63 @@ export default function WineDetails({ wine, onBack, onSaveCellar, onUpdateReview
                   ✓ Salvo permanentemente na sua adega!
                 </span>
               )}
+            </div>
+          </div>
+        )}
+
+        {/* ── AVALIAÇÕES DOS DEMAIS MEMBROS DA ADEGA COMPARTILHADA ── */}
+        {wine.reviews && Object.values(wine.reviews).filter(r => r.userId !== currentUserId && (r.rating > 0 || r.review)).length > 0 && (
+          <div style={{ paddingTop: 'var(--space-4)', borderTop: '1px solid rgba(184, 141, 34, 0.2)', display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
+            <div className="flex items-center justify-between flex-wrap" style={{ gap: 'var(--space-2)' }}>
+              <span style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 700, color: 'var(--text-muted)' }}>
+                Avaliações dos Membros da Adega:
+              </span>
+              {wine.groupAverageRating > 0 && (
+                <span style={{ fontSize: '0.75rem', color: '#065F46', background: '#ECFDF5', border: '1px solid #A7F3D0', padding: '3px 10px', borderRadius: '99px', fontWeight: 700 }}>
+                  👥 Média da Confraria: {wine.groupAverageRating}★
+                </span>
+              )}
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2" style={{ gap: 'var(--space-3)' }}>
+              {Object.values(wine.reviews)
+                .filter(r => r.userId !== currentUserId && (r.rating > 0 || r.review))
+                .map((r, idx) => (
+                  <div
+                    key={idx}
+                    style={{
+                      background: '#FFFFFF',
+                      padding: 'var(--space-4)',
+                      borderRadius: 'var(--radius-xl)',
+                      border: '1px solid var(--border-clean)',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: 'var(--space-2)'
+                    }}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-main)' }}>
+                        {r.userName || 'Membro do Grupo'}
+                      </span>
+                      {r.rating > 0 && (
+                        <div className="flex items-center" style={{ gap: '3px', background: '#FDF8EB', padding: '2px 8px', borderRadius: '6px', border: '1px solid rgba(184,141,34,0.3)' }}>
+                          <Star style={{ width: '13px', height: '13px', fill: '#D4AF37', color: '#D4AF37' }} />
+                          <span style={{ fontSize: '0.75rem', fontWeight: 800, color: '#8C6810' }}>{r.rating}★</span>
+                        </div>
+                      )}
+                    </div>
+                    {r.occasion && (
+                      <span style={{ fontSize: '0.7rem', color: 'var(--gold-accent)', fontWeight: 600 }}>
+                        {r.occasion}
+                      </span>
+                    )}
+                    {r.review && (
+                      <p style={{ fontSize: '0.825rem', color: 'var(--text-secondary)', fontStyle: 'italic', lineHeight: 1.6 }}>
+                        "{r.review}"
+                      </p>
+                    )}
+                  </div>
+                ))}
             </div>
           </div>
         )}

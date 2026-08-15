@@ -5,23 +5,41 @@ import Navbar from './components/Navbar';
 import Scanner from './components/Scanner';
 import WineDetails from './components/WineDetails';
 import Cellar from './components/Cellar';
+import SharedCellarModal from './components/SharedCellarModal';
 import LoginPage from './pages/LoginPage';
 import AdminPage from './pages/AdminPage';
 import RoleGuard from './components/RoleGuard';
 import PwaInstallPrompt from './components/PwaInstallPrompt';
-import { useCellar } from './hooks/useCellar';
+import { useSharedCellar } from './hooks/useSharedCellar';
 import { scanWineLabel } from './utils/aiScanner';
 
 // ── App interno (usa os hooks de auth e adega) ─────────────────────────
 function AppInner() {
   const { user, profile, loading: authLoading } = useAuth();
-  const { cellarWines, toggleWine, removeWine, isInCellar, updateWineReview } = useCellar();
+  const {
+    cellarsList,
+    activeCellar,
+    activeCellarId,
+    setActiveCellarId,
+    cellarWines,
+    cellarMembers,
+    loadingMembers,
+    createSharedCellar,
+    joinSharedCellar,
+    leaveSharedCellar,
+    deleteSharedCellar,
+    toggleWine,
+    removeWine,
+    isInCellar,
+    updateWineReview
+  } = useSharedCellar();
 
-  const [activeTab, setActiveTab]       = useState('scanner');
-  const [scannedWine, setScannedWine]   = useState(null);
-  const [isScanning, setIsScanning]     = useState(false);
-  const [scanProgress, setScanProgress] = useState({ stage: 'init', percent: 0, text: '' });
-  const [scanError, setScanError]       = useState(null);
+  const [activeTab, setActiveTab]             = useState('scanner');
+  const [scannedWine, setScannedWine]         = useState(null);
+  const [isScanning, setIsScanning]           = useState(false);
+  const [scanProgress, setScanProgress]       = useState({ stage: 'init', percent: 0, text: '' });
+  const [scanError, setScanError]             = useState(null);
+  const [isSharedModalOpen, setIsSharedModalOpen] = useState(false);
 
   // Enquanto carrega a sessão, mostra um loader clean e elegante
   if (authLoading) {
@@ -81,6 +99,8 @@ function AppInner() {
               if (updated) setScannedWine(updated);
             }}
             isSaved={isInCellar(activeWine.id)}
+            currentUserId={user.id}
+            activeCellar={activeCellar}
           />
         )}
         {activeTab === 'cellar' && (
@@ -89,6 +109,10 @@ function AppInner() {
             onSelectWine={handleSelectWine}
             onRemoveWine={removeWine}
             onScanNew={() => setActiveTab('scanner')}
+            activeCellar={activeCellar}
+            cellarsList={cellarsList}
+            onOpenSharedModal={() => setIsSharedModalOpen(true)}
+            onSelectCellar={(id) => setActiveCellarId(id)}
           />
         )}
         {activeTab === 'admin' && (
@@ -97,6 +121,23 @@ function AppInner() {
           </RoleGuard>
         )}
       </main>
+
+      {/* ── MODAL DE GERENCIAMENTO DE ADEGAS COMPARTILHADAS ── */}
+      <SharedCellarModal
+        isOpen={isSharedModalOpen}
+        onClose={() => setIsSharedModalOpen(false)}
+        cellarsList={cellarsList}
+        activeCellar={activeCellar}
+        activeCellarId={activeCellarId}
+        onSelectCellar={(id) => setActiveCellarId(id)}
+        onCreateCellar={createSharedCellar}
+        onJoinCellar={joinSharedCellar}
+        onLeaveCellar={leaveSharedCellar}
+        onDeleteCellar={deleteSharedCellar}
+        cellarMembers={cellarMembers}
+        loadingMembers={loadingMembers}
+        currentUserId={user?.id}
+      />
 
       {/* ── MODAL DE AVISO / ERRO DE ESCANEAMENTO ── */}
       {scanError && (
