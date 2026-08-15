@@ -8,6 +8,7 @@ import Cellar from './components/Cellar';
 import LoginPage from './pages/LoginPage';
 import AdminPage from './pages/AdminPage';
 import RoleGuard from './components/RoleGuard';
+import PwaInstallPrompt from './components/PwaInstallPrompt';
 import { useCellar } from './hooks/useCellar';
 import { scanWineLabel } from './utils/aiScanner';
 
@@ -93,6 +94,9 @@ function AppInner() {
           <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>© 2026 VinoVision AI. Sommelier de Alta Precisão & Inteligência Enológica.</p>
         </div>
       </footer>
+
+      {/* ── BANNER / PROMPT DE INSTALAÇÃO PWA ── */}
+      <PwaInstallPrompt />
     </div>
   );
 }

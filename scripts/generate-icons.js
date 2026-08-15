@@ -1,4 +1,12 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// SVG Luxury VinoVision Icon with Golden Wine Glass & Stars
+const svgIcon = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
   <defs>
     <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
       <stop offset="0%" stop-color="#721B29"/>
@@ -42,4 +50,10 @@
 
   <!-- Base Plate Accent -->
   <ellipse cx="256" cy="410" rx="48" ry="4" fill="url(#goldGrad)" opacity="0.9"/>
-</svg>
+</svg>`;
+
+const publicDir = path.join(__dirname, '..', 'public');
+fs.writeFileSync(path.join(publicDir, 'pwa-icon.svg'), svgIcon, 'utf8');
+fs.writeFileSync(path.join(publicDir, 'favicon.svg'), svgIcon, 'utf8');
+
+console.log('SVG PWA icons generated successfully in public/');
