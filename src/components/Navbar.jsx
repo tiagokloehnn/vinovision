@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Wine, Camera, Bookmark, Sparkles, Compass, LogOut, ShieldCheck, Crown } from 'lucide-react';
+import { Wine, Camera, Bookmark, Sparkles, LogOut, ShieldCheck, Crown } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
 export default function Navbar({ activeTab, setActiveTab, cellarCount }) {
@@ -25,9 +25,8 @@ export default function Navbar({ activeTab, setActiveTab, cellarCount }) {
   }, [showUserMenu]);
 
   const NAV = [
-    { id: 'scanner', Icon: Camera,   label: 'Escanear'  },
-    { id: 'samples', Icon: Compass,  label: 'Biblioteca' },
-    { id: 'cellar',  Icon: Bookmark, label: 'Adega'      },
+    { id: 'scanner', Icon: Camera,   label: 'Escanear' },
+    { id: 'cellar',  Icon: Bookmark, label: 'Adega'    },
   ];
 
   if (isAdmin) {

@@ -1,6 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { Camera, Upload, Sparkles, Image as ImageIcon, RefreshCw, CheckCircle, ShieldAlert, Wine } from 'lucide-react';
-import { SAMPLE_WINES } from '../data/sampleWines';
+import { Camera, Upload, Sparkles, RefreshCw, CheckCircle, ShieldAlert, Wine } from 'lucide-react';
 
 export default function Scanner({ onScanStart, isScanning, scanProgress }) {
   const [activeMode, setActiveMode] = useState('upload');
@@ -55,9 +54,8 @@ export default function Scanner({ onScanStart, isScanning, scanProgress }) {
   const triggerScan = (id) => onScanStart(id || selectedFile || previewUrl);
 
   const MODES = [
-    { id: 'upload',  Icon: Upload,    label: 'Enviar Foto' },
-    { id: 'camera',  Icon: Camera,    label: 'Câmera'      },
-    { id: 'samples', Icon: ImageIcon, label: 'Amostras'    },
+    { id: 'upload', Icon: Upload, label: 'Enviar Foto' },
+    { id: 'camera', Icon: Camera, label: 'Câmera'      },
   ];
 
   const FEATURES = [
@@ -205,34 +203,6 @@ export default function Scanner({ onScanStart, isScanning, scanProgress }) {
               </div>
         )}
 
-        {/* MODO AMOSTRAS */}
-        {activeMode === 'samples' && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-5)' }}>
-            <div style={{ textAlign: 'center' }}>
-              <h3 style={{ fontFamily: 'var(--font-heading)', fontSize: 'var(--text-2xl)', color: 'var(--text-main)' }}>Rótulos de Referência</h3>
-              <p style={{ fontSize: 'var(--text-sm)', color: 'var(--text-secondary)', marginTop: 'var(--space-1)' }}>Selecione um rótulo consagrado para experimentar a análise enológica instantânea</p>
-            </div>
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6" style={{ gap: 'var(--space-3)' }}>
-              {SAMPLE_WINES.map(s => (
-                <div key={s.id} onClick={() => triggerScan(s.id)} style={{ cursor: 'pointer', background: '#FFFFFF', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-clean)', padding: 'var(--space-2)', overflow: 'hidden', transition: 'all 0.25s ease', boxShadow: '0 2px 8px rgba(35,20,25,0.03)' }}
-                  onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(184,141,34,0.6)'; e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 6px 16px rgba(184,141,34,0.15)'; }}
-                  onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border-clean)'; e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 2px 8px rgba(35,20,25,0.03)'; }}
-                >
-                  <div style={{ aspectRatio: '3/4', borderRadius: 'var(--radius-md)', overflow: 'hidden', position: 'relative', border: '1px solid rgba(0,0,0,0.05)' }}>
-                    <img src={s.image} alt={s.name} className="w-full h-full object-cover" style={{ transition: 'transform 0.4s' }}
-                      onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.06)'}
-                      onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'} />
-                    <span style={{ position: 'absolute', top: 'var(--space-1)', right: 'var(--space-1)', fontSize: 'var(--text-xs)', background: 'rgba(255,255,255,0.85)', padding: '2px 4px', borderRadius: '4px' }}>{s.flagEmoji}</span>
-                  </div>
-                  <div style={{ padding: `var(--space-2) var(--space-1) var(--space-1)`, overflow: 'hidden' }}>
-                    <p style={{ fontSize: 'calc(var(--text-xs) * 0.88)', fontWeight: 700, textTransform: 'uppercase', color: 'var(--gold-accent)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.winery}</p>
-                    <h4 style={{ fontSize: 'var(--text-xs)', fontWeight: 600, color: 'var(--text-main)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.name}</h4>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
       </div>
 
       {/* ── FEATURE TILES DE LUXO ── */}

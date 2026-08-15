@@ -4,7 +4,6 @@ import { AuthProvider, useAuth } from './contexts/AuthContext';
 import Navbar from './components/Navbar';
 import Scanner from './components/Scanner';
 import WineDetails from './components/WineDetails';
-import SampleGallery from './components/SampleGallery';
 import Cellar from './components/Cellar';
 import LoginPage from './pages/LoginPage';
 import AdminPage from './pages/AdminPage';
@@ -72,9 +71,6 @@ function AppInner() {
             onSaveCellar={toggleWine}
             isSaved={isInCellar(scannedWine.id)}
           />
-        )}
-        {activeTab === 'samples' && (
-          <SampleGallery onSelectWine={handleSelectWine} />
         )}
         {activeTab === 'cellar' && (
           <Cellar
