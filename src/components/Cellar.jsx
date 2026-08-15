@@ -369,7 +369,7 @@ export default function Cellar({
                         <button
                           onClick={() => onRemoveWine(wine.id)}
                           style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', padding: '2px', display: 'flex', alignItems: 'center', flexShrink: 0 }}
-                          title="Remover da Adega"
+                          title={`Remover apenas de ${activeCellar?.name || 'esta adega'}`}
                         >
                           <Trash2 style={{ width: '15px', height: '15px' }} />
                         </button>

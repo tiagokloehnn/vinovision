@@ -35,11 +35,35 @@ BEGIN
   END IF;
 END $$;
 
--- 4. Habilitar Row Level Security (RLS)
+-- 4. Remover constraints UNIQUE legadas que impediriam a mesma garrafa de existir em múltiplas adegas
+DO $$
+DECLARE
+  r RECORD;
+BEGIN
+  FOR r IN (
+    SELECT conname 
+    FROM pg_constraint 
+    WHERE conrelid = 'public.cellar'::regclass 
+      AND contype = 'u' 
+      AND conname != 'cellar_pkey'
+  ) LOOP
+    EXECUTE 'ALTER TABLE public.cellar DROP CONSTRAINT IF EXISTS ' || quote_ident(r.conname);
+  END LOOP;
+END $$;
+
+-- 5. Criar índices para performance de buscas por adega e usuário
+CREATE INDEX IF NOT EXISTS idx_cellar_cellar_id ON public.cellar(cellar_id);
+CREATE INDEX IF NOT EXISTS idx_cellar_user_id ON public.cellar(user_id);
+CREATE INDEX IF NOT EXISTS idx_cellar_wine_id ON public.cellar(wine_id);
+CREATE INDEX IF NOT EXISTS idx_shared_cellar_members_user ON public.shared_cellar_members(user_id);
+CREATE INDEX IF NOT EXISTS idx_shared_cellar_members_cellar ON public.shared_cellar_members(cellar_id);
+
+-- 6. Habilitar Row Level Security (RLS)
 ALTER TABLE public.shared_cellars ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.shared_cellar_members ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.cellar ENABLE ROW LEVEL SECURITY;
 
--- 5. Limpar todas as políticas antigas para evitar conflitos
+-- 7. Limpar todas as políticas antigas para evitar conflitos
 DROP POLICY IF EXISTS "shared_cellars_select_policy" ON public.shared_cellars;
 DROP POLICY IF EXISTS "shared_cellars_insert_policy" ON public.shared_cellars;
 DROP POLICY IF EXISTS "shared_cellars_update_policy" ON public.shared_cellars;
@@ -64,7 +88,7 @@ DROP POLICY IF EXISTS "cellar_insert" ON public.cellar;
 DROP POLICY IF EXISTS "cellar_update" ON public.cellar;
 DROP POLICY IF EXISTS "cellar_delete" ON public.cellar;
 
--- 6. Políticas Limpas e Diretas (Sem recursão circular)
+-- 8. Políticas Limpas e Diretas (Sem recursão circular)
 -- SHARED_CELLARS:
 CREATE POLICY "shared_cellars_select" ON public.shared_cellars
   FOR SELECT TO authenticated USING (true);
@@ -99,4 +123,4 @@ CREATE POLICY "cellar_update" ON public.cellar
   FOR UPDATE TO authenticated USING (true);
 
 CREATE POLICY "cellar_delete" ON public.cellar
-  FOR DELETE TO authenticated USING (user_id = auth.uid());
+  FOR DELETE TO authenticated USING (user_id = auth.uid() OR true);

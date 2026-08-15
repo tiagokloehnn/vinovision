@@ -31,7 +31,10 @@ function AppInner() {
     toggleWine,
     removeWine,
     isInCellar,
-    updateWineReview
+    updateWineReview,
+    getWineCellars,
+    toggleWineInCellar,
+    saveWineToCellars
   } = useSharedCellar();
 
   const [activeTab, setActiveTab]             = useState('scanner');
@@ -101,6 +104,10 @@ function AppInner() {
             isSaved={isInCellar(activeWine.id)}
             currentUserId={user.id}
             activeCellar={activeCellar}
+            cellarsList={cellarsList}
+            getWineCellars={getWineCellars}
+            onToggleCellar={toggleWineInCellar}
+            onSaveToCellars={saveWineToCellars}
           />
         )}
         {activeTab === 'cellar' && (

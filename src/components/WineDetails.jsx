@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import {
   Star, MapPin, Calendar, Wine, Thermometer, Clock,
   Award, Bookmark, Check, Share2, ArrowLeft, Sparkles,
-  DollarSign, UtensilsCrossed, Quote, Percent, Edit3, MessageSquare, Tag, Heart
+  DollarSign, UtensilsCrossed, Quote, Percent, Edit3, MessageSquare, Tag, Heart,
+  Users, ChevronDown, Plus, X
 } from 'lucide-react';
 import TastingRadar from './TastingRadar';
 
@@ -13,7 +14,11 @@ export default function WineDetails({
   onUpdateReview,
   isSaved,
   currentUserId,
-  activeCellar
+  activeCellar = { id: 'personal', name: 'Minha Adega Pessoal', isPersonal: true },
+  cellarsList = [],
+  getWineCellars,
+  onToggleCellar,
+  onSaveToCellars
 }) {
   if (!wine) return null;
 
@@ -24,12 +29,41 @@ export default function WineDetails({
   const [isEditing, setIsEditing]           = useState(!wine.userRating && !wine.userReview);
   const [saveStatus, setSaveStatus]         = useState('idle'); // 'idle' | 'saving' | 'saved'
 
+  // Multi-Adega State
+  const [savedCellarIds, setSavedCellarIds] = useState([]);
+  const [loadingCellars, setLoadingCellars] = useState(false);
+  const [showCellarModal, setShowCellarModal] = useState(false);
+  const [togglingCellarId, setTogglingCellarId] = useState(null);
+
   useEffect(() => {
     setPersonalRating(wine.userRating || 0);
     setPersonalReview(wine.userReview || '');
     setPersonalOccasion(wine.userOccasion || '');
     setIsEditing(!wine.userRating && !wine.userReview);
   }, [wine]);
+
+  // Carrega em quais adegas este vinho está salvo
+  useEffect(() => {
+    let isMounted = true;
+    if (getWineCellars && wine?.id) {
+      setLoadingCellars(true);
+      getWineCellars(wine.id)
+        .then(ids => {
+          if (isMounted) {
+            setSavedCellarIds(ids || []);
+            setLoadingCellars(false);
+          }
+        })
+        .catch(() => {
+          if (isMounted) setLoadingCellars(false);
+        });
+    } else if (isSaved) {
+      setSavedCellarIds([activeCellar?.id || 'personal']);
+    }
+    return () => {
+      isMounted = false;
+    };
+  }, [wine?.id, getWineCellars, isSaved, activeCellar?.id]);
 
   const RATING_LABELS = {
     1: '1.0 — Não agradou',
@@ -77,6 +111,48 @@ export default function WineDetails({
     }
   };
 
+  // Alternar presença em uma adega específica
+  const handleToggleSpecificCellar = async (cellarId) => {
+    if (!onToggleCellar) {
+      if (onSaveCellar) onSaveCellar(wine);
+      return;
+    }
+
+    setTogglingCellarId(cellarId);
+    try {
+      const isNowIn = await onToggleCellar(wine, cellarId);
+      setSavedCellarIds(prev =>
+        isNowIn ? [...new Set([...prev, cellarId])] : prev.filter(id => id !== cellarId)
+      );
+    } catch (err) {
+      console.error('[WineDetails] Erro ao alternar adega:', err);
+    } finally {
+      setTogglingCellarId(null);
+    }
+  };
+
+  const isSavedAnywhere = savedCellarIds.length > 0 || isSaved;
+
+  const saveButtonLabel = (() => {
+    if (savedCellarIds.length === 0) return 'Guardar na Adega';
+    if (savedCellarIds.length === 1) {
+      const match = cellarsList.find(c => c.id === savedCellarIds[0]);
+      if (match) {
+        return match.isPersonal ? 'Salvo na Adega Pessoal' : `Salvo em ${match.name}`;
+      }
+      return 'Salvo na Adega';
+    }
+    return `Salvo em ${savedCellarIds.length} Adegas`;
+  })();
+
+  const handleMainSaveClick = () => {
+    if (cellarsList.length > 1) {
+      setShowCellarModal(true);
+    } else {
+      handleToggleSpecificCellar('personal');
+    }
+  };
+
   const activeDisplayRating = hoverRating || personalRating;
 
   return (
@@ -89,20 +165,35 @@ export default function WineDetails({
           Voltar
         </button>
 
-        <div className="flex items-center" style={{ gap: 'var(--space-2)' }}>
+        <div className="flex items-center flex-wrap" style={{ gap: 'var(--space-2)' }}>
           <button onClick={handleShare} className="btn-ghost" title="Compartilhar"
             style={{ padding: 'var(--space-2) var(--space-3)', borderRadius: '99px' }}>
             <Share2 style={{ width: 'var(--text-base)', height: 'var(--text-base)', color: 'var(--gold-accent)' }} />
           </button>
 
+          {/* Botão Principal de Guardar / Gerenciar Adegas */}
           <button
-            onClick={() => onSaveCellar(wine)}
-            className={isSaved ? "btn-gold" : "btn-wine"}
+            type="button"
+            onClick={handleMainSaveClick}
+            className={isSavedAnywhere ? "btn-gold" : "btn-wine"}
+            style={{ display: 'flex', alignItems: 'center', gap: '8px', position: 'relative' }}
           >
-            {isSaved ? (
-              <><Check style={{ width: 'var(--text-base)', height: 'var(--text-base)' }} /> Salvo na Adega</>
+            {isSavedAnywhere ? (
+              <>
+                <Check style={{ width: 'var(--text-base)', height: 'var(--text-base)' }} />
+                <span>{saveButtonLabel}</span>
+                {cellarsList.length > 1 && (
+                  <ChevronDown style={{ width: '14px', height: '14px', opacity: 0.8 }} />
+                )}
+              </>
             ) : (
-              <><Bookmark style={{ width: 'var(--text-base)', height: 'var(--text-base)' }} /> Guardar na Adega</>
+              <>
+                <Bookmark style={{ width: 'var(--text-base)', height: 'var(--text-base)' }} />
+                <span>Guardar na Adega</span>
+                {cellarsList.length > 1 && (
+                  <ChevronDown style={{ width: '14px', height: '14px', opacity: 0.8 }} />
+                )}
+              </>
             )}
           </button>
         </div>
@@ -351,11 +442,15 @@ export default function WineDetails({
                     </button>
                   ))}
                 </div>
-
                 {activeDisplayRating > 0 && (
-                  <span className="animate-fadeIn" style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--wine-primary)', background: '#FDF8EB', padding: '4px 12px', borderRadius: '99px', border: '1px solid rgba(184,141,34,0.3)' }}>
-                    {RATING_LABELS[activeDisplayRating]}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <span style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--wine-primary)', fontFamily: 'var(--font-heading)' }}>
+                      {activeDisplayRating.toFixed(1)}
+                    </span>
+                    <span style={{ fontSize: '0.85rem', color: '#8C6810', fontWeight: 600 }}>
+                      — {RATING_LABELS[activeDisplayRating]}
+                    </span>
+                  </div>
                 )}
               </div>
             </div>
@@ -363,39 +458,37 @@ export default function WineDetails({
             {/* 2. Ocasião */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
               <label style={{ fontSize: 'var(--text-xs)', textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 700, color: 'var(--text-main)' }}>
-                2. Ocasião / Momento da Degustação:
+                2. Em que Ocasião foi Degustado?
               </label>
               <div className="flex flex-wrap" style={{ gap: 'var(--space-2)' }}>
-                {OCCASIONS.map(occ => {
-                  const isSelected = personalOccasion === occ;
-                  return (
-                    <button
-                      key={occ}
-                      type="button"
-                      onClick={() => setPersonalOccasion(isSelected ? '' : occ)}
-                      style={{
-                        padding: '6px 14px',
-                        borderRadius: '99px',
-                        fontSize: '0.8rem',
-                        fontWeight: 600,
-                        cursor: 'pointer',
-                        transition: 'all 0.2s ease',
-                        border: isSelected ? '1px solid var(--wine-primary)' : '1px solid var(--border-clean)',
-                        background: isSelected ? 'var(--wine-primary)' : '#FFFFFF',
-                        color: isSelected ? '#FFFFFF' : 'var(--text-secondary)'
-                      }}
-                    >
-                      {occ}
-                    </button>
-                  );
-                })}
+                {OCCASIONS.map((occ) => (
+                  <button
+                    key={occ}
+                    type="button"
+                    onClick={() => setPersonalOccasion(personalOccasion === occ ? '' : occ)}
+                    style={{
+                      padding: '6px 14px',
+                      borderRadius: '99px',
+                      fontSize: '0.8rem',
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                      border: '1px solid',
+                      transition: 'all 0.2s ease',
+                      borderColor: personalOccasion === occ ? 'var(--wine-primary)' : 'var(--border-clean)',
+                      background: personalOccasion === occ ? '#FDF2F4' : '#FFFFFF',
+                      color: personalOccasion === occ ? 'var(--wine-primary)' : 'var(--text-secondary)'
+                    }}
+                  >
+                    {occ}
+                  </button>
+                ))}
               </div>
             </div>
 
-            {/* 3. Descrição Pessoal */}
+            {/* 3. Comentários / Notas de Prova */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
               <label htmlFor="personal-review-input" style={{ fontSize: 'var(--text-xs)', textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 700, color: 'var(--text-main)' }}>
-                3. Minhas Impressões Pessoais (O que você achou desta garrafa?):
+                3. Suas Notas & Percepções Pessoais:
               </label>
               <textarea
                 id="personal-review-input"
@@ -621,6 +714,192 @@ export default function WineDetails({
             <p style={{ fontFamily: 'var(--font-heading)', fontSize: 'var(--text-base)', color: '#4A0E1A', fontStyle: 'italic', lineHeight: 1.8 }}>
               "{wine.sommelierNote}"
             </p>
+          </div>
+        </div>
+      )}
+
+      {/* ── MODAL GERENCIADOR MULTI-ADEGAS ── */}
+      {showCellarModal && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 110,
+            background: 'rgba(26,20,22,0.65)',
+            backdropFilter: 'blur(8px)',
+            WebkitBackdropFilter: 'blur(8px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '1rem'
+          }}
+          onClick={() => setShowCellarModal(false)}
+        >
+          <div
+            className="glass-card animate-scaleUp"
+            style={{
+              maxWidth: '32rem',
+              width: '100%',
+              padding: 'clamp(1.5rem, 4vw, 2.25rem)',
+              background: '#FFFFFF',
+              borderRadius: '24px',
+              boxShadow: '0 25px 60px rgba(0,0,0,0.3)',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '1.25rem',
+              position: 'relative'
+            }}
+            onClick={e => e.stopPropagation()}
+          >
+            <button
+              onClick={() => setShowCellarModal(false)}
+              style={{
+                position: 'absolute',
+                top: '1.25rem',
+                right: '1.25rem',
+                background: 'transparent',
+                border: 'none',
+                cursor: 'pointer',
+                color: 'var(--text-muted)',
+                fontSize: '1.25rem',
+                lineHeight: 1
+              }}
+              title="Fechar"
+            >
+              <X style={{ width: '20px', height: '20px' }} />
+            </button>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <div
+                style={{
+                  width: '46px',
+                  height: '46px',
+                  borderRadius: '14px',
+                  background: '#FDF2F4',
+                  border: '1.5px solid rgba(114,27,41,0.2)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0
+                }}
+              >
+                <Bookmark style={{ width: '22px', height: '22px', color: 'var(--wine-primary)' }} />
+              </div>
+              <div>
+                <span style={{ fontSize: '0.725rem', textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 800, color: 'var(--gold-accent)' }}>
+                  Gerenciamento Multi-Adega
+                </span>
+                <h3 style={{ fontFamily: 'var(--font-heading)', fontSize: '1.35rem', color: 'var(--text-main)', fontWeight: 800, lineHeight: 1.2 }}>
+                  Guardar em Suas Adegas
+                </h3>
+              </div>
+            </div>
+
+            <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', lineHeight: 1.5, margin: 0 }}>
+              Escolha em quais adegas esta garrafa (<strong>{wine.name}</strong>) deve ficar guardada. Cada adega mantém seu controle de forma totalmente independente:
+            </p>
+
+            {/* Lista de Adegas */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', maxHeight: '50vh', overflowY: 'auto', paddingRight: '4px' }}>
+              {cellarsList.map(c => {
+                const isSavedInThis = savedCellarIds.includes(c.id);
+                const isProcessing = togglingCellarId === c.id;
+
+                return (
+                  <div
+                    key={c.id}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      gap: '12px',
+                      padding: '12px 14px',
+                      borderRadius: '16px',
+                      background: isSavedInThis ? 'linear-gradient(135deg, #FDF8EB 0%, #FFFFFF 100%)' : '#FAF8F5',
+                      border: isSavedInThis ? '1.5px solid rgba(184,141,34,0.45)' : '1px solid var(--border-clean)',
+                      transition: 'all 0.2s ease'
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: 0 }}>
+                      <div
+                        style={{
+                          width: '38px',
+                          height: '38px',
+                          borderRadius: '10px',
+                          background: c.isPersonal ? '#FDF2F4' : '#FDF8EB',
+                          border: c.isPersonal ? '1px solid rgba(114,27,41,0.2)' : '1px solid rgba(184,141,34,0.3)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          flexShrink: 0
+                        }}
+                      >
+                        {c.isPersonal ? (
+                          <Wine style={{ width: '18px', height: '18px', color: 'var(--wine-primary)' }} />
+                        ) : (
+                          <Users style={{ width: '18px', height: '18px', color: 'var(--gold-accent)' }} />
+                        )}
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+                        <span style={{ fontSize: '0.9rem', fontWeight: 800, color: 'var(--text-main)', lineHeight: 1.3 }} className="truncate">
+                          {c.name}
+                        </span>
+                        <span style={{ fontSize: '0.725rem', color: 'var(--text-muted)', lineHeight: 1.2 }}>
+                          {c.isPersonal ? 'Privada & Particular' : `Confraria (${c.role === 'OWNER' ? 'Dono' : 'Membro'})`}
+                        </span>
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      disabled={isProcessing}
+                      onClick={() => handleToggleSpecificCellar(c.id)}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        padding: '8px 14px',
+                        borderRadius: '99px',
+                        fontSize: '0.8rem',
+                        fontWeight: 700,
+                        cursor: isProcessing ? 'wait' : 'pointer',
+                        border: isSavedInThis ? 'none' : '1px solid rgba(184,141,34,0.4)',
+                        background: isSavedInThis ? 'var(--wine-primary)' : '#FFFFFF',
+                        color: isSavedInThis ? '#FFFFFF' : 'var(--gold-accent)',
+                        boxShadow: isSavedInThis ? '0 3px 10px rgba(114,27,41,0.2)' : 'none',
+                        transition: 'all 0.2s ease',
+                        flexShrink: 0
+                      }}
+                    >
+                      {isProcessing ? (
+                        <span style={{ fontSize: '0.75rem' }}>Salvando…</span>
+                      ) : isSavedInThis ? (
+                        <>
+                          <Check style={{ width: '14px', height: '14px' }} />
+                          <span>Salvo</span>
+                        </>
+                      ) : (
+                        <>
+                          <Plus style={{ width: '14px', height: '14px' }} />
+                          <span>Guardar</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', paddingTop: '8px', borderTop: '1px solid var(--border-clean)' }}>
+              <button
+                type="button"
+                onClick={() => setShowCellarModal(false)}
+                className="btn-wine"
+                style={{ width: '100%', padding: '12px', fontSize: '0.925rem', borderRadius: '12px', justifyContent: 'center' }}
+              >
+                Concluir
+              </button>
+            </div>
           </div>
         </div>
       )}
