@@ -1,368 +1,474 @@
-  @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Plus+Jakarta+Sans:ital,wght@0,300..800;1,300..800&display=swap');
-  @import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Plus+Jakarta+Sans:ital,wght@0,300..800;1,300..800&display=swap');
+@import "tailwindcss";
 
-  /* =============================================
-    SISTEMA DE DESIGN — TOKENS FLUIDOS
-    Escala automaticamente de mobile → desktop
-    ============================================= */
-  :root {
-    /* Cores */
-    --bg-dark: #0b0508;
-    --bg-card: rgba(18, 9, 14, 0.75);
-    --bg-card-hover: rgba(28, 14, 22, 0.85);
-    --wine-primary: #800e26;
-    --wine-deep: #3b0911;
-    --gold-accent: #d4af37;
-    --gold-light: #f3e5ab;
-    --text-main: #f5f0f3;
-    --text-muted: #9e8e96;
-    --border-clean: rgba(255, 255, 255, 0.06);
+/* =============================================
+   SISTEMA DE DESIGN — CLEAN LUXURY & HIGH-END
+   Paleta Clara, Refinada e de Alto Valor Aquisitivo
+   ============================================= */
+:root {
+  /* Cores de Superfície & Fundo */
+  --bg-canvas: #F8F5F0;
+  --bg-canvas-subtle: #F3EFE8;
+  --bg-card: rgba(255, 255, 255, 0.88);
+  --bg-card-solid: #FFFFFF;
+  --bg-card-hover: #FFFFFF;
+  --bg-input: #FFFFFF;
 
-    /* Fontes */
-    --font-heading: 'Playfair Display', Georgia, serif;
-    --font-sans: 'Plus Jakarta Sans', -apple-system, sans-serif;
+  /* Tons Grand Cru & Metais Nobres */
+  --wine-primary: #721B29;
+  --wine-deep: #4A0E1A;
+  --wine-hover: #5A121E;
+  --wine-light: #FDF2F4;
+  --wine-border: rgba(114, 27, 41, 0.16);
 
-    /* -----------------------------------------------
-      TIPOGRAFIA FLUIDA — clamp(min, preferido, max)
-      min: mobile 320px | max: desktop 1440px
-  ----------------------------------------------- */
-    --text-xs: clamp(0.65rem, 1.2vw, 0.75rem);
-    /* ~10-12px */
-    --text-sm: clamp(0.75rem, 1.4vw, 0.875rem);
-    /* ~12-14px */
-    --text-base: clamp(0.875rem, 1.6vw, 1rem);
-    /* ~14-16px */
-    --text-lg: clamp(1rem, 2vw, 1.125rem);
-    /* ~16-18px */
-    --text-xl: clamp(1.1rem, 2.5vw, 1.25rem);
-    /* ~18-20px */
-    --text-2xl: clamp(1.25rem, 3vw, 1.5rem);
-    /* ~20-24px */
-    --text-3xl: clamp(1.5rem, 4vw, 1.875rem);
-    /* ~24-30px */
-    --text-4xl: clamp(1.75rem, 5vw, 2.25rem);
-    /* ~28-36px */
-    --text-5xl: clamp(2rem, 6vw, 3rem);
-    /* ~32-48px */
+  --gold-accent: #B88D22;
+  --gold-dark: #8C6810;
+  --gold-light: #FDF8EB;
+  --gold-border: rgba(184, 141, 34, 0.25);
+  --gold-gradient: linear-gradient(135deg, #D4AF37 0%, #B88D22 100%);
+  --gold-gradient-hover: linear-gradient(135deg, #DFBE55 0%, #C4982B 100%);
 
-    /* -----------------------------------------------
-      ESPAÇAMENTOS FLUIDOS
-  ----------------------------------------------- */
-    --space-1: clamp(0.25rem, 0.5vw, 0.375rem);
-    --space-2: clamp(0.4rem, 0.8vw, 0.5rem);
-    --space-3: clamp(0.6rem, 1vw, 0.75rem);
-    --space-4: clamp(0.75rem, 1.5vw, 1rem);
-    --space-5: clamp(1rem, 2vw, 1.25rem);
-    --space-6: clamp(1.25rem, 2.5vw, 1.5rem);
-    --space-8: clamp(1.5rem, 3vw, 2rem);
-    --space-10: clamp(2rem, 4vw, 2.5rem);
-    --space-12: clamp(2.5rem, 5vw, 3rem);
-    --space-16: clamp(3rem, 6vw, 4rem);
+  /* Tipografia & Hierarquia de Texto */
+  --text-main: #1A1416;
+  --text-secondary: #483B42;
+  --text-muted: #73646B;
+  --text-subtle: #9E9198;
 
-    /* -----------------------------------------------
-      RAIOS DE BORDA FLUIDOS
-  ----------------------------------------------- */
-    --radius-sm: clamp(0.5rem, 1vw, 0.75rem);
-    --radius-md: clamp(0.75rem, 1.5vw, 1rem);
-    --radius-lg: clamp(1rem, 2vw, 1.25rem);
-    --radius-xl: clamp(1.25rem, 2.5vw, 1.5rem);
-    --radius-2xl: clamp(1.5rem, 3vw, 1.875rem);
-    --radius-3xl: clamp(1.75rem, 3.5vw, 2.25rem);
+  /* Linhas & Bordas Finas de Alta Precisão */
+  --border-clean: rgba(30, 20, 25, 0.08);
+  --border-card: rgba(212, 175, 55, 0.18);
+  --border-active: rgba(114, 27, 41, 0.4);
+
+  /* Sombras de Luxo Acetinadas */
+  --shadow-sm: 0 2px 8px rgba(35, 20, 25, 0.04);
+  --shadow-md: 0 10px 30px -4px rgba(35, 20, 25, 0.06), 0 2px 6px -1px rgba(35, 20, 25, 0.03);
+  --shadow-lg: 0 20px 40px -10px rgba(35, 20, 25, 0.08), 0 4px 14px -2px rgba(35, 20, 25, 0.04);
+  --shadow-float: 0 25px 50px -12px rgba(35, 20, 25, 0.12);
+
+  /* Fontes Editoriais */
+  --font-heading: 'Playfair Display', Georgia, serif;
+  --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+
+  /* Tipografia Fluida — clamp(min, preferido, max) */
+  --text-xs: clamp(0.6875rem, 1.2vw, 0.75rem);   /* 11-12px */
+  --text-sm: clamp(0.8125rem, 1.4vw, 0.875rem);  /* 13-14px */
+  --text-base: clamp(0.9375rem, 1.6vw, 1rem);    /* 15-16px */
+  --text-lg: clamp(1.0625rem, 2vw, 1.1875rem);   /* 17-19px */
+  --text-xl: clamp(1.1875rem, 2.5vw, 1.375rem);  /* 19-22px */
+  --text-2xl: clamp(1.375rem, 3vw, 1.625rem);    /* 22-26px */
+  --text-3xl: clamp(1.625rem, 4vw, 2.125rem);    /* 26-34px */
+  --text-4xl: clamp(2rem, 5vw, 2.75rem);         /* 32-44px */
+  --text-5xl: clamp(2.5rem, 6vw, 3.5rem);        /* 40-56px */
+
+  /* Espaçamentos Fluidos */
+  --space-1: clamp(0.25rem, 0.5vw, 0.375rem);
+  --space-2: clamp(0.4rem, 0.8vw, 0.5rem);
+  --space-3: clamp(0.6rem, 1vw, 0.75rem);
+  --space-4: clamp(0.75rem, 1.5vw, 1rem);
+  --space-5: clamp(1rem, 2vw, 1.25rem);
+  --space-6: clamp(1.25rem, 2.5vw, 1.5rem);
+  --space-8: clamp(1.5rem, 3vw, 2rem);
+  --space-10: clamp(2rem, 4vw, 2.5rem);
+  --space-12: clamp(2.5rem, 5vw, 3rem);
+  --space-16: clamp(3rem, 6vw, 4rem);
+
+  /* Raios de Borda */
+  --radius-sm: 0.5rem;
+  --radius-md: 0.75rem;
+  --radius-lg: 1rem;
+  --radius-xl: 1.25rem;
+  --radius-2xl: 1.5rem;
+  --radius-3xl: 2rem;
+}
+
+/* =============================================
+   RESET & BASE
+   ============================================= */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  font-size: 16px;
+  scroll-behavior: smooth;
+  background-color: var(--bg-canvas);
+}
+
+body {
+  background-color: var(--bg-canvas);
+  background-image:
+    radial-gradient(circle at 15% 10%, rgba(212, 175, 55, 0.06) 0%, transparent 45%),
+    radial-gradient(circle at 85% 25%, rgba(114, 27, 41, 0.04) 0%, transparent 50%),
+    radial-gradient(circle at 50% 85%, rgba(212, 175, 55, 0.05) 0%, transparent 55%);
+  background-attachment: fixed;
+  color: var(--text-main);
+  font-family: var(--font-sans);
+  font-size: var(--text-base);
+  line-height: 1.7;
+  letter-spacing: -0.01em;
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
+}
+
+p,
+li,
+label {
+  line-height: 1.75;
+  color: var(--text-secondary);
+}
+
+a {
+  text-decoration: none;
+}
+
+/* =============================================
+   TIPOGRAFIA — EDITORIAL & HEADINGS
+   ============================================= */
+h1 {
+  font-family: var(--font-heading);
+  font-size: var(--text-4xl);
+  line-height: 1.15;
+  letter-spacing: -0.025em;
+  color: var(--text-main);
+  font-weight: 700;
+}
+
+h2 {
+  font-family: var(--font-heading);
+  font-size: var(--text-3xl);
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+  color: var(--text-main);
+  font-weight: 700;
+}
+
+h3 {
+  font-family: var(--font-heading);
+  font-size: var(--text-2xl);
+  line-height: 1.25;
+  color: var(--text-main);
+  font-weight: 600;
+}
+
+h4 {
+  font-family: var(--font-heading);
+  font-size: var(--text-xl);
+  line-height: 1.35;
+  color: var(--text-main);
+  font-weight: 600;
+}
+
+.font-serif {
+  font-family: var(--font-heading);
+}
+
+/* =============================================
+   SCROLLBAR DE LUXO
+   ============================================= */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-canvas-subtle);
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(184, 141, 34, 0.35);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(114, 27, 41, 0.45);
+}
+
+/* =============================================
+   GLASS CARD — CLEAN LUXURY
+   ============================================= */
+.glass-card {
+  background: var(--bg-card);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid var(--border-card);
+  border-radius: var(--radius-2xl);
+  box-shadow: var(--shadow-md);
+  transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.glass-card:hover {
+  border-color: rgba(184, 141, 34, 0.4);
+  box-shadow: var(--shadow-lg);
+}
+
+.glass-card-solid {
+  background: #FFFFFF;
+  border: 1px solid var(--border-clean);
+  border-radius: var(--radius-2xl);
+  box-shadow: var(--shadow-sm);
+  transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.glass-card-solid:hover {
+  border-color: rgba(184, 141, 34, 0.35);
+  box-shadow: var(--shadow-md);
+}
+
+/* =============================================
+   BOTÕES DE ALTO PADRÃO
+   ============================================= */
+.btn-gold {
+  background: linear-gradient(135deg, #C5A059 0%, #A67D1E 100%);
+  color: #FFFFFF;
+  font-weight: 600;
+  font-family: var(--font-sans);
+  font-size: var(--text-sm);
+  letter-spacing: 0.02em;
+  padding: var(--space-3) var(--space-6);
+  border-radius: 99px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  box-shadow: 0 4px 14px rgba(184, 141, 34, 0.28);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.btn-gold:hover {
+  transform: translateY(-1.5px);
+  box-shadow: 0 6px 20px rgba(184, 141, 34, 0.4);
+  background: linear-gradient(135deg, #D4AF37 0%, #B88D22 100%);
+  color: #FFFFFF;
+}
+
+.btn-wine {
+  background: linear-gradient(135deg, #721B29 0%, #520F1D 100%);
+  color: #FFFFFF;
+  font-weight: 600;
+  font-family: var(--font-sans);
+  font-size: var(--text-sm);
+  letter-spacing: 0.02em;
+  padding: var(--space-3) var(--space-6);
+  border-radius: 99px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  box-shadow: 0 4px 14px rgba(114, 27, 41, 0.25);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.btn-wine:hover {
+  transform: translateY(-1.5px);
+  box-shadow: 0 6px 20px rgba(114, 27, 41, 0.35);
+  background: linear-gradient(135deg, #8A2335 0%, #631423 100%);
+  color: #FFFFFF;
+}
+
+.btn-ghost {
+  background: #FFFFFF;
+  color: var(--text-secondary);
+  border: 1px solid var(--border-clean);
+  font-weight: 600;
+  font-size: var(--text-sm);
+  padding: var(--space-3) var(--space-5);
+  border-radius: 99px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  box-shadow: var(--shadow-sm);
+  transition: all 0.25s ease;
+  white-space: nowrap;
+}
+
+.btn-ghost:hover {
+  background: #FAF7F2;
+  color: var(--text-main);
+  border-color: rgba(184, 141, 34, 0.35);
+  box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
+}
+
+/* =============================================
+   BADGES & PILLS DE LUXO
+   ============================================= */
+.badge-wine {
+  background: #FDF2F4;
+  color: #721B29;
+  border: 1px solid rgba(114, 27, 41, 0.2);
+  padding: var(--space-1) var(--space-4);
+  border-radius: 99px;
+  font-size: var(--text-sm);
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.badge-gold {
+  background: #FDF8EB;
+  color: #8C6810;
+  border: 1px solid rgba(184, 141, 34, 0.25);
+  padding: var(--space-1) var(--space-4);
+  border-radius: 99px;
+  font-size: var(--text-sm);
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+/* =============================================
+   CARD DE SPEC (Preço / Temp / Álcool)
+   ============================================= */
+.spec-tile {
+  background: #FFFFFF;
+  border: 1px solid rgba(0, 0, 0, 0.07);
+  border-radius: var(--radius-xl);
+  padding: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  text-align: center;
+  box-shadow: 0 2px 8px rgba(30, 20, 25, 0.03);
+  transition: all 0.25s ease;
+}
+
+.spec-tile:hover {
+  border-color: rgba(184, 141, 34, 0.35);
+  box-shadow: 0 6px 16px rgba(30, 20, 25, 0.06);
+  transform: translateY(-1px);
+}
+
+.spec-tile .spec-icon {
+  width: clamp(1.25rem, 2vw, 1.5rem);
+  height: clamp(1.25rem, 2vw, 1.5rem);
+  color: var(--wine-primary);
+}
+
+.spec-tile .spec-label {
+  font-size: var(--text-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  color: var(--text-muted);
+  font-weight: 700;
+}
+
+.spec-tile .spec-value {
+  font-size: var(--text-sm);
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+/* =============================================
+   SCAN LASER ANIMATION — CLEAN GOLD
+   ============================================= */
+@keyframes laserSweep {
+  0% {
+    top: 0%;
+    opacity: 0.8;
   }
-
-  /* =============================================
-    RESET & BASE
-    ============================================= */
-  *,
-  *::before,
-  *::after {
-    box-sizing: border-box;
-    margin: 0;
-    padding: 0;
+  50% {
+    top: 96%;
+    opacity: 1;
   }
-
-  html {
-    font-size: 16px;
-    scroll-behavior: smooth;
+  100% {
+    top: 0%;
+    opacity: 0.8;
   }
+}
 
-  body {
-    background-color: var(--bg-dark);
-    background-image:
-      radial-gradient(circle at 50% 20%, rgba(128, 14, 38, 0.15) 0%, transparent 60%),
-      radial-gradient(circle at 50% 80%, rgba(59, 9, 17, 0.2) 0%, transparent 60%);
-    background-attachment: fixed;
-    color: var(--text-main);
-    font-family: var(--font-sans);
-    font-size: var(--text-base);
-    line-height: 1.7;
-    letter-spacing: 0.01em;
-    min-height: 100vh;
-    -webkit-font-smoothing: antialiased;
-    overflow-x: hidden;
+.scan-laser-line {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, transparent, #C5A059, #FFFFFF, #C5A059, transparent);
+  box-shadow: 0 0 14px 2px rgba(184, 141, 34, 0.7);
+  animation: laserSweep 2.5s infinite ease-in-out;
+  z-index: 10;
+}
+
+/* =============================================
+   BARRA DE PROGRESSO
+   ============================================= */
+.progress-bar-bg {
+  width: 100%;
+  height: clamp(5px, 0.6vw, 7px);
+  background: rgba(0, 0, 0, 0.08);
+  border-radius: 99px;
+  overflow: hidden;
+}
+
+.progress-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #721B29, #C5A059);
+  border-radius: 99px;
+  transition: width 0.4s ease;
+}
+
+/* =============================================
+   MODAL OVERLAY
+   ============================================= */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(20, 14, 17, 0.55);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-5);
+}
+
+/* =============================================
+   FADE IN ANIMATION
+   ============================================= */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
   }
-
-  p,
-  li,
-  label {
-    line-height: 1.8;
-    letter-spacing: 0.01em;
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
+}
 
-  a {
-    text-decoration: none;
-  }
+.animate-fadeIn {
+  animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
 
-  /* =============================================
-    TIPOGRAFIA — HEADINGS FLUIDOS
-    ============================================= */
-  h1 {
-    font-family: var(--font-heading);
-    font-size: var(--text-4xl);
-    line-height: 1.2;
-    letter-spacing: -0.02em;
-  }
+/* =============================================
+   INPUTS & CAMPOS DE TEXTO
+   ============================================= */
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="search"],
+select,
+textarea {
+  font-family: var(--font-sans);
+  color: var(--text-main);
+  background: #FFFFFF;
+}
 
-  h2 {
-    font-family: var(--font-heading);
-    font-size: var(--text-3xl);
-    line-height: 1.25;
-    letter-spacing: -0.01em;
-  }
-
-  h3 {
-    font-family: var(--font-heading);
-    font-size: var(--text-2xl);
-    line-height: 1.3;
-  }
-
-  h4 {
-    font-family: var(--font-heading);
-    font-size: var(--text-xl);
-    line-height: 1.4;
-  }
-
-  .font-serif {
-    font-family: var(--font-heading);
-  }
-
-  /* =============================================
-    SCROLLBAR
-    ============================================= */
-  ::-webkit-scrollbar {
-    width: 5px;
-  }
-
-  ::-webkit-scrollbar-track {
-    background: #0b0508;
-  }
-
-  ::-webkit-scrollbar-thumb {
-    background: rgba(128, 14, 38, 0.5);
-    border-radius: 4px;
-  }
-
-  /* =============================================
-    GLASS CARD — FLUÍDO
-    ============================================= */
-  .glass-card {
-    background: var(--bg-card);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    border: 1px solid var(--border-clean);
-    border-radius: var(--radius-3xl);
-    box-shadow: 0 var(--space-4) var(--space-10) rgba(0, 0, 0, 0.35);
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  }
-
-  .glass-card:hover {
-    border-color: rgba(212, 175, 55, 0.2);
-    box-shadow: 0 var(--space-6) var(--space-12) rgba(0, 0, 0, 0.5);
-  }
-
-  /* =============================================
-    BOTÕES FLUÍDOS
-    ============================================= */
-  .btn-gold {
-    background: linear-gradient(135deg, #d4af37 0%, #b88d22 100%);
-    color: #0b0508;
-    font-weight: 700;
-    font-family: var(--font-sans);
-    font-size: var(--text-sm);
-    padding: var(--space-3) var(--space-6);
-    border-radius: 99px;
-    border: none;
-    cursor: pointer;
-    display: inline-flex;
-    align-items: center;
-    gap: var(--space-2);
-    box-shadow: 0 var(--space-1) var(--space-4) rgba(212, 175, 55, 0.25);
-    transition: all 0.3s ease;
-    text-decoration: none;
-    white-space: nowrap;
-  }
-
-  .btn-gold:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 var(--space-2) var(--space-5) rgba(212, 175, 55, 0.4);
-    background: linear-gradient(135deg, #f3e5ab 0%, #d4af37 100%);
-  }
-
-  .btn-ghost {
-    background: rgba(255, 255, 255, 0.03);
-    color: var(--text-main);
-    border: 1px solid var(--border-clean);
-    font-size: var(--text-sm);
-    padding: var(--space-3) var(--space-5);
-    border-radius: 99px;
-    cursor: pointer;
-    display: inline-flex;
-    align-items: center;
-    gap: var(--space-2);
-    transition: all 0.2s ease;
-    white-space: nowrap;
-  }
-
-  .btn-ghost:hover {
-    background: rgba(255, 255, 255, 0.08);
-    border-color: rgba(255, 255, 255, 0.15);
-  }
-
-  /* =============================================
-    BADGES FLUÍDOS
-    ============================================= */
-  .badge-wine {
-    background: rgba(128, 14, 38, 0.25);
-    color: #f3e5ab;
-    border: 1px solid rgba(212, 175, 55, 0.2);
-    padding: var(--space-1) var(--space-4);
-    border-radius: 99px;
-    font-size: var(--text-sm);
-    font-weight: 600;
-    display: inline-flex;
-    align-items: center;
-    gap: var(--space-2);
-  }
-
-  /* =============================================
-    CARD DE SPEC (Preço / Temp / Álcool)
-    ============================================= */
-  .spec-tile {
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid var(--border-clean);
-    border-radius: var(--radius-lg);
-    padding: var(--space-4);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: var(--space-2);
-    text-align: center;
-    transition: border-color 0.2s;
-  }
-
-  .spec-tile:hover {
-    border-color: rgba(212, 175, 55, 0.2);
-  }
-
-  .spec-tile .spec-icon {
-    width: clamp(1.25rem, 2vw, 1.5rem);
-    height: clamp(1.25rem, 2vw, 1.5rem);
-    color: var(--gold-accent);
-  }
-
-  .spec-tile .spec-label {
-    font-size: var(--text-xs);
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    color: var(--text-muted);
-    font-weight: 700;
-  }
-
-  .spec-tile .spec-value {
-    font-size: var(--text-sm);
-    font-weight: 700;
-    color: white;
-  }
-
-  /* =============================================
-    SCAN LASER ANIMATION
-    ============================================= */
-  @keyframes laserSweep {
-    0% {
-      top: 0%;
-      opacity: 0.7;
-    }
-
-    50% {
-      top: 95%;
-      opacity: 1;
-    }
-
-    100% {
-      top: 0%;
-      opacity: 0.7;
-    }
-  }
-
-  .scan-laser-line {
-    position: absolute;
-    left: 0;
-    right: 0;
-    height: 3px;
-    background: linear-gradient(90deg, transparent, #d4af37, #ffffff, #d4af37, transparent);
-    box-shadow: 0 0 12px 2px rgba(212, 175, 55, 0.6);
-    animation: laserSweep 2.5s infinite ease-in-out;
-    z-index: 10;
-  }
-
-  /* =============================================
-    BARRA DE PROGRESSO
-    ============================================= */
-  .progress-bar-bg {
-    width: 100%;
-    height: clamp(4px, 0.5vw, 6px);
-    background: rgba(255, 255, 255, 0.08);
-    border-radius: 99px;
-    overflow: hidden;
-  }
-
-  .progress-bar-fill {
-    height: 100%;
-    background: linear-gradient(90deg, #800e26, #d4af37);
-    border-radius: 99px;
-    transition: width 0.4s ease;
-  }
-
-  /* =============================================
-    MODAL OVERLAY
-    ============================================= */
-  .modal-overlay {
-    position: fixed;
-    inset: 0;
-    background: rgba(5, 2, 4, 0.85);
-    backdrop-filter: blur(12px);
-    z-index: 1000;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: var(--space-5);
-  }
-
-  /* =============================================
-    FADE IN ANIMATION
-    ============================================= */
-  @keyframes fadeIn {
-    from {
-      opacity: 0;
-      transform: translateY(8px);
-    }
-
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
-  }
-
-  .animate-fadeIn {
-    animation: fadeIn 0.4s ease both;
-  }
+input::placeholder,
+textarea::placeholder {
+  color: var(--text-subtle);
+}

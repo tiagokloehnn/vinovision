@@ -42,11 +42,11 @@ export default function Navbar({ activeTab, setActiveTab, cellarCount }) {
   const getRoleBadge = () => {
     switch (role) {
       case 'ADMIN':
-        return { label: 'ADMIN', color: '#f3e5ab', bg: 'rgba(212,175,55,0.2)', border: 'rgba(212,175,55,0.4)', Icon: ShieldCheck };
+        return { label: 'ADMIN', color: '#8C6810', bg: '#FDF8EB', border: 'rgba(184,141,34,0.3)', Icon: ShieldCheck };
       case 'USER_PREMIUM':
-        return { label: 'PREMIUM', color: '#6ee7b7', bg: 'rgba(16,185,129,0.2)', border: 'rgba(16,185,129,0.4)', Icon: Crown };
+        return { label: 'PREMIUM', color: '#065F46', bg: '#ECFDF5', border: 'rgba(16,185,129,0.3)', Icon: Crown };
       default:
-        return { label: 'COMMUM', color: 'var(--text-muted)', bg: 'rgba(255,255,255,0.06)', border: 'var(--border-clean)', Icon: null };
+        return { label: 'COMMUM', color: 'var(--text-muted)', bg: 'rgba(0,0,0,0.04)', border: 'var(--border-clean)', Icon: null };
     }
   };
 
@@ -61,40 +61,54 @@ export default function Navbar({ activeTab, setActiveTab, cellarCount }) {
   };
 
   return (
-    <header style={{ position: 'sticky', top: 0, zIndex: 100, padding: `var(--space-3) var(--space-6)`, background: 'rgba(11,5,8,0.9)', backdropFilter: 'blur(20px)', borderBottom: '1px solid var(--border-clean)' }}>
+    <header style={{ position: 'sticky', top: 0, zIndex: 100, padding: `var(--space-3) var(--space-6)`, background: 'rgba(255, 255, 255, 0.88)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', borderBottom: '1px solid var(--border-clean)', boxShadow: '0 4px 20px -5px rgba(35, 20, 25, 0.05)' }}>
       <div className="w-full max-w-7xl mx-auto flex items-center justify-between" style={{ gap: 'var(--space-4)' }}>
 
         {/* ── LOGO ── */}
         <div onClick={() => setActiveTab('scanner')} className="flex items-center" style={{ gap: 'var(--space-3)', cursor: 'pointer' }}>
-          <div style={{ width: 'clamp(2rem,3.5vw,2.5rem)', height: 'clamp(2rem,3.5vw,2.5rem)', borderRadius: 'var(--radius-md)', background: 'linear-gradient(135deg, #800e26, #3b0911)', border: '1px solid rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-            <Wine style={{ width: 'var(--text-lg)', height: 'var(--text-lg)', color: 'var(--gold-light)' }} />
+          <div style={{ width: 'clamp(2.25rem,3.5vw,2.75rem)', height: 'clamp(2.25rem,3.5vw,2.75rem)', borderRadius: 'var(--radius-md)', background: 'linear-gradient(135deg, #721B29 0%, #4A0E1A 100%)', border: '1px solid rgba(212,175,55,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, boxShadow: '0 4px 12px rgba(114,27,41,0.25)' }}>
+            <Wine style={{ width: 'var(--text-lg)', height: 'var(--text-lg)', color: '#FDF8EB' }} />
           </div>
           <div>
             <div className="flex items-center" style={{ gap: 'var(--space-2)' }}>
-              <span style={{ fontFamily: 'var(--font-heading)', fontSize: 'var(--text-xl)', fontWeight: 700, color: 'white', letterSpacing: '-0.01em' }}>VinoVision</span>
-              <span style={{ fontSize: 'calc(var(--text-xs) * 0.9)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', padding: `var(--space-1) var(--space-2)`, borderRadius: 'var(--radius-sm)', background: 'rgba(128,14,38,0.6)', color: 'var(--gold-light)', border: '1px solid rgba(255,255,255,0.1)' }}>AI</span>
+              <span style={{ fontFamily: 'var(--font-heading)', fontSize: 'var(--text-xl)', fontWeight: 700, color: 'var(--text-main)', letterSpacing: '-0.02em' }}>VinoVision</span>
+              <span style={{ fontSize: 'calc(var(--text-xs) * 0.9)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', padding: `2px 8px`, borderRadius: 'var(--radius-sm)', background: 'var(--wine-light)', color: 'var(--wine-primary)', border: '1px solid var(--wine-border)' }}>AI</span>
             </div>
-            <p className="hidden sm:block" style={{ fontSize: 'calc(var(--text-xs) * 0.9)', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+            <p className="hidden sm:block" style={{ fontSize: 'calc(var(--text-xs) * 0.95)', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 600 }}>
               Sommelier Inteligente
             </p>
           </div>
         </div>
 
         {/* ── NAV DESKTOP ── */}
-        <nav className="hidden sm:flex items-center" style={{ background: 'rgba(255,255,255,0.05)', padding: 'var(--space-1)', borderRadius: '99px', border: '1px solid var(--border-clean)', gap: 'var(--space-1)' }}>
-          {NAV.map(({ id, Icon, label }) => (
-            <button key={id} type="button" onClick={() => setActiveTab(id)} className="flex items-center relative font-semibold transition-all"
-              style={{ gap: 'var(--space-2)', padding: `var(--space-2) var(--space-4)`, borderRadius: '99px', fontSize: 'var(--text-sm)', border: 'none', cursor: 'pointer', background: activeTab === id ? 'var(--wine-primary)' : 'transparent', color: activeTab === id ? 'var(--gold-light)' : 'var(--text-muted)' }}
-            >
-              <Icon style={{ width: 'var(--text-base)', height: 'var(--text-base)' }} />
-              {label}
-              {id === 'cellar' && cellarCount > 0 && (
-                <span style={{ width: 'var(--text-lg)', height: 'var(--text-lg)', borderRadius: '99px', background: 'var(--gold-accent)', color: '#0b0508', fontSize: 'calc(var(--text-xs) * 0.9)', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  {cellarCount}
-                </span>
-              )}
-            </button>
-          ))}
+        <nav className="hidden sm:flex items-center" style={{ background: '#F2EDE4', padding: '4px', borderRadius: '99px', border: '1px solid rgba(0,0,0,0.06)', gap: '4px' }}>
+          {NAV.map(({ id, Icon, label }) => {
+            const isActive = activeTab === id;
+            return (
+              <button key={id} type="button" onClick={() => setActiveTab(id)} className="flex items-center relative font-semibold transition-all"
+                style={{
+                  gap: 'var(--space-2)',
+                  padding: `var(--space-2) var(--space-5)`,
+                  borderRadius: '99px',
+                  fontSize: 'var(--text-sm)',
+                  border: 'none',
+                  cursor: 'pointer',
+                  background: isActive ? 'var(--wine-primary)' : 'transparent',
+                  color: isActive ? '#FFFFFF' : 'var(--text-secondary)',
+                  boxShadow: isActive ? '0 4px 12px rgba(114,27,41,0.25)' : 'none',
+                  transition: 'all 0.25s cubic-bezier(0.16, 1, 0.3, 1)'
+                }}
+              >
+                <Icon style={{ width: 'var(--text-base)', height: 'var(--text-base)', color: isActive ? '#FDF8EB' : 'inherit' }} />
+                {label}
+                {id === 'cellar' && cellarCount > 0 && (
+                  <span style={{ minWidth: '1.25rem', height: '1.25rem', padding: '0 5px', borderRadius: '99px', background: isActive ? '#B88D22' : 'var(--wine-primary)', color: '#FFFFFF', fontSize: '0.7rem', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    {cellarCount}
+                  </span>
+                )}
+              </button>
+            );
+          })}
         </nav>
 
         {/* ── BOTÕES DIREITA ── */}
@@ -110,22 +124,23 @@ export default function Navbar({ activeTab, setActiveTab, cellarCount }) {
               type="button"
               onClick={() => setShowUserMenu(v => !v)}
               style={{
-                width: 'clamp(2.2rem,3.8vw,2.6rem)',
-                height: 'clamp(2.2rem,3.8vw,2.6rem)',
+                width: 'clamp(2.3rem,3.8vw,2.75rem)',
+                height: 'clamp(2.3rem,3.8vw,2.75rem)',
                 borderRadius: '99px',
                 background: isAdmin
-                  ? 'linear-gradient(135deg, #d4af37, #800e26)'
+                  ? 'linear-gradient(135deg, #B88D22, #721B29)'
                   : isPremium
-                  ? 'linear-gradient(135deg, #10b981, #065f46)'
-                  : 'linear-gradient(135deg, #3b0911, #800e26)',
-                border: `2px solid ${roleBadge.color}`,
+                  ? 'linear-gradient(135deg, #10B981, #065F46)'
+                  : 'linear-gradient(135deg, #721B29, #4A0E1A)',
+                border: `2px solid #FFFFFF`,
+                boxShadow: '0 2px 10px rgba(0,0,0,0.12)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 cursor: 'pointer',
                 fontWeight: 700,
                 fontSize: 'var(--text-xs)',
-                color: 'white',
+                color: '#FFFFFF',
                 flexShrink: 0
               }}
               title={user?.email}
@@ -135,27 +150,27 @@ export default function Navbar({ activeTab, setActiveTab, cellarCount }) {
 
             {/* Dropdown do usuário */}
             {showUserMenu && (
-              <div className="glass-card animate-fadeIn" style={{ position: 'absolute', top: 'calc(100% + var(--space-2))', right: 0, minWidth: '15rem', padding: 'var(--space-4)', display: 'flex', flexDirection: 'column', gap: 'var(--space-3)', zIndex: 200, boxShadow: '0 10px 30px rgba(0,0,0,0.8)' }}>
+              <div className="glass-card animate-fadeIn" style={{ position: 'absolute', top: 'calc(100% + var(--space-2))', right: 0, minWidth: '16rem', padding: 'var(--space-4)', display: 'flex', flexDirection: 'column', gap: 'var(--space-3)', zIndex: 200, background: '#FFFFFF', boxShadow: '0 20px 45px -10px rgba(35,20,25,0.15)', border: '1px solid rgba(0,0,0,0.08)' }}>
                 {/* Info usuário */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', paddingBottom: 'var(--space-3)', borderBottom: '1px solid var(--border-clean)' }}>
-                  <div style={{ width: 'var(--text-2xl)', height: 'var(--text-2xl)', borderRadius: '99px', background: 'linear-gradient(135deg, #800e26, #d4af37)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 'var(--text-xs)', color: 'white', flexShrink: 0 }}>
+                  <div style={{ width: '2.5rem', height: '2.5rem', borderRadius: '99px', background: 'linear-gradient(135deg, #721B29, #B88D22)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 'var(--text-sm)', color: '#FFFFFF', flexShrink: 0, boxShadow: '0 2px 8px rgba(114,27,41,0.2)' }}>
                     {initials}
                   </div>
                   <div style={{ minWidth: 0 }}>
-                    <p style={{ fontSize: 'var(--text-xs)', fontWeight: 700, color: 'white', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{emailShort}</p>
+                    <p style={{ fontSize: 'var(--text-sm)', fontWeight: 700, color: 'var(--text-main)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{emailShort}</p>
                     
                     {/* Badge da Role no perfil */}
-                    <span className="inline-flex items-center" style={{ gap: '4px', padding: '2px 8px', borderRadius: '99px', fontSize: 'calc(var(--text-xs) * 0.85)', fontWeight: 700, background: roleBadge.bg, border: `1px solid ${roleBadge.border}`, color: roleBadge.color, marginTop: '2px' }}>
-                      {RoleBadgeIcon && <RoleBadgeIcon style={{ width: '10px', height: '10px' }} />}
+                    <span className="inline-flex items-center" style={{ gap: '4px', padding: '2px 8px', borderRadius: '99px', fontSize: 'calc(var(--text-xs) * 0.88)', fontWeight: 700, background: roleBadge.bg, border: `1px solid ${roleBadge.border}`, color: roleBadge.color, marginTop: '2px' }}>
+                      {RoleBadgeIcon && <RoleBadgeIcon style={{ width: '11px', height: '11px' }} />}
                       {roleBadge.label}
                     </span>
                   </div>
                 </div>
 
                 {/* Adega count */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', fontSize: 'var(--text-xs)', color: 'var(--text-secondary)', fontWeight: 500 }}>
                   <Bookmark style={{ width: 'var(--text-base)', height: 'var(--text-base)', color: 'var(--gold-accent)' }} />
-                  {cellarCount} vinho{cellarCount !== 1 ? 's' : ''} na adega
+                  {cellarCount} vinho{cellarCount !== 1 ? 's' : ''} guardado{cellarCount !== 1 ? 's' : ''} na adega
                 </div>
 
                 {/* Atalho Painel Admin para ADMIN */}
@@ -164,7 +179,7 @@ export default function Navbar({ activeTab, setActiveTab, cellarCount }) {
                     type="button"
                     onClick={() => { setActiveTab('admin'); setShowUserMenu(false); }}
                     className="flex items-center"
-                    style={{ gap: 'var(--space-2)', padding: `var(--space-2) var(--space-3)`, borderRadius: 'var(--radius-md)', fontSize: 'var(--text-sm)', fontWeight: 600, background: 'rgba(212, 175, 55, 0.15)', border: '1px solid rgba(212, 175, 55, 0.3)', color: 'var(--gold-light)', cursor: 'pointer' }}
+                    style={{ gap: 'var(--space-2)', padding: `var(--space-2) var(--space-3)`, borderRadius: 'var(--radius-md)', fontSize: 'var(--text-sm)', fontWeight: 600, background: '#FDF8EB', border: '1px solid rgba(184, 141, 34, 0.3)', color: '#8C6810', cursor: 'pointer' }}
                   >
                     <ShieldCheck style={{ width: 'var(--text-base)', height: 'var(--text-base)', color: 'var(--gold-accent)' }} />
                     Painel Administrativo
@@ -176,9 +191,9 @@ export default function Navbar({ activeTab, setActiveTab, cellarCount }) {
                   type="button"
                   onClick={handleLogout}
                   className="flex items-center"
-                  style={{ gap: 'var(--space-2)', padding: `var(--space-2) var(--space-3)`, borderRadius: 'var(--radius-md)', fontSize: 'var(--text-sm)', fontWeight: 600, background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.3)', color: '#f87171', cursor: 'pointer', transition: 'all 0.2s' }}
-                  onMouseEnter={e => e.currentTarget.style.background = 'rgba(239,68,68,0.3)'}
-                  onMouseLeave={e => e.currentTarget.style.background = 'rgba(239,68,68,0.15)'}
+                  style={{ gap: 'var(--space-2)', padding: `var(--space-2) var(--space-3)`, borderRadius: 'var(--radius-md)', fontSize: 'var(--text-sm)', fontWeight: 600, background: '#FEF2F2', border: '1px solid #FECACA', color: '#DC2626', cursor: 'pointer', transition: 'all 0.2s' }}
+                  onMouseEnter={e => e.currentTarget.style.background = '#FEE2E2'}
+                  onMouseLeave={e => e.currentTarget.style.background = '#FEF2F2'}
                 >
                   <LogOut style={{ width: 'var(--text-base)', height: 'var(--text-base)' }} />
                   Sair da conta
@@ -191,14 +206,17 @@ export default function Navbar({ activeTab, setActiveTab, cellarCount }) {
 
       {/* ── NAV MOBILE ── */}
       <div className="flex sm:hidden justify-around flex-wrap" style={{ marginTop: 'var(--space-3)', paddingTop: 'var(--space-3)', borderTop: '1px solid var(--border-clean)', gap: 'var(--space-1)' }}>
-        {NAV.map(({ id, Icon, label }) => (
-          <button key={id} type="button" onClick={() => setActiveTab(id)} className="flex items-center font-semibold"
-            style={{ gap: 'var(--space-1)', padding: `var(--space-1) var(--space-3)`, borderRadius: '99px', fontSize: 'var(--text-xs)', border: 'none', cursor: 'pointer', background: activeTab === id ? 'var(--wine-primary)' : 'transparent', color: activeTab === id ? 'var(--gold-light)' : 'var(--text-muted)' }}
-          >
-            <Icon style={{ width: 'var(--text-base)', height: 'var(--text-base)' }} />
-            {label}{id === 'cellar' && cellarCount > 0 ? ` (${cellarCount})` : ''}
-          </button>
-        ))}
+        {NAV.map(({ id, Icon, label }) => {
+          const isActive = activeTab === id;
+          return (
+            <button key={id} type="button" onClick={() => setActiveTab(id)} className="flex items-center font-semibold"
+              style={{ gap: 'var(--space-1)', padding: `var(--space-1) var(--space-3)`, borderRadius: '99px', fontSize: 'var(--text-xs)', border: 'none', cursor: 'pointer', background: isActive ? 'var(--wine-primary)' : 'transparent', color: isActive ? '#FFFFFF' : 'var(--text-secondary)' }}
+            >
+              <Icon style={{ width: 'var(--text-base)', height: 'var(--text-base)' }} />
+              {label}{id === 'cellar' && cellarCount > 0 ? ` (${cellarCount})` : ''}
+            </button>
+          );
+        })}
       </div>
     </header>
   );

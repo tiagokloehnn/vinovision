@@ -12,14 +12,14 @@ export default function TastingRadar({ profile }) {
 
   return (
     <div className="glass-card w-full overflow-hidden h-full"
-      style={{ padding: 'var(--space-8)', display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
+      style={{ padding: 'var(--space-8)', display: 'flex', flexDirection: 'column', gap: 'var(--space-6)', background: '#FFFFFF' }}>
 
       {/* Cabeçalho */}
-      <div style={{ paddingBottom: 'var(--space-4)', borderBottom: '1px solid rgba(255,255,255,0.06)', display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
+      <div style={{ paddingBottom: 'var(--space-4)', borderBottom: '1px solid var(--border-clean)', display: 'flex', flexDirection: 'column', gap: 'var(--space-1)' }}>
         <span style={{ fontSize: 'var(--text-xs)', textTransform: 'uppercase', letterSpacing: '0.12em', fontWeight: 700, color: 'var(--gold-accent)' }}>
           Análise Sensorial
         </span>
-        <h3 style={{ fontFamily: 'var(--font-heading)', fontSize: 'var(--text-2xl)', color: 'white' }}>
+        <h3 style={{ fontFamily: 'var(--font-heading)', fontSize: 'var(--text-2xl)', color: 'var(--text-main)', fontWeight: 700 }}>
           Perfil Gustativo
         </h3>
       </div>
@@ -30,10 +30,10 @@ export default function TastingRadar({ profile }) {
           <div key={item.label} style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
             {/* Rótulo + Descrição */}
             <div className="flex justify-between items-center">
-              <span style={{ fontFamily: 'var(--font-heading)', fontSize: 'var(--text-lg)', color: 'white', fontWeight: 600 }}>
+              <span style={{ fontFamily: 'var(--font-heading)', fontSize: 'var(--text-lg)', color: 'var(--text-main)', fontWeight: 600 }}>
                 {item.label}
               </span>
-              <span style={{ fontSize: 'var(--text-xs)', fontWeight: 700, color: 'var(--gold-light)', background: 'rgba(128,14,38,0.3)', padding: `var(--space-1) var(--space-3)`, borderRadius: '99px', border: '1px solid var(--border-clean)', whiteSpace: 'nowrap' }}>
+              <span style={{ fontSize: 'var(--text-xs)', fontWeight: 700, color: '#8C6810', background: '#FDF8EB', padding: `3px 12px`, borderRadius: '99px', border: '1px solid rgba(184,141,34,0.3)', whiteSpace: 'nowrap' }}>
                 {item.desc}
               </span>
             </div>
@@ -43,11 +43,12 @@ export default function TastingRadar({ profile }) {
               {[1, 2, 3, 4, 5].map((step) => (
                 <div key={step} style={{
                   flex: 1,
-                  height: 'clamp(8px, 1vw, 12px)',
+                  height: 'clamp(8px, 1vw, 11px)',
                   borderRadius: '99px',
                   background: step <= item.value
-                    ? 'linear-gradient(90deg, #800e26, #d4af37)'
-                    : 'rgba(255,255,255,0.05)',
+                    ? 'linear-gradient(90deg, #721B29, #C5A059)'
+                    : '#F2EDE4',
+                  boxShadow: step <= item.value ? '0 2px 6px rgba(114,27,41,0.2)' : 'none',
                   transition: 'background 0.3s ease',
                 }} />
               ))}

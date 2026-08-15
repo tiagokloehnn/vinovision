@@ -18,8 +18,6 @@ import {
   EyeOff,
   Sparkles,
   Database,
-  Check,
-  Wine,
   Plus,
   Trash2,
   X,
@@ -75,7 +73,7 @@ export default function AdminPage() {
     }
   };
 
-  // Carrega conexões salvas dinamicamente do banco de dados (app_config) e localStorage (SEM FALLBACKS DE ENV)
+  // Carrega conexões salvas dinamicamente do banco de dados (app_config) e localStorage
   const loadConnectionsList = async () => {
     setLoadingConnections(true);
     let list = [];
@@ -288,21 +286,17 @@ export default function AdminPage() {
     const labelName = item.name;
 
     try {
-      // 1. Apaga do Supabase app_config se existir
       await supabase
         .from('app_config')
         .delete()
         .eq('key', keyName);
 
-      // 2. Apaga do LocalStorage
       if (keyName === 'wineapi_key') localStorage.removeItem('vinovision_wineapi_key');
       else if (keyName === 'groq_api_key') localStorage.removeItem('vinovision_groq_key');
       else if (keyName === 'gemini_api_key') localStorage.removeItem('vinovision_gemini_key');
       else if (keyName === 'openai_api_key') localStorage.removeItem('vinovision_openai_key');
 
-      // 3. REMOVE IMEDIATAMENTE DA LISTA DE EXIBIÇÃO DA TELA!
       setConnectionsList(prev => prev.filter(c => c.keyName !== keyName));
-
       showToast('success', `Conexão "${labelName}" excluída permanentemente!`);
     } catch (err) {
       showToast('error', `Erro ao excluir: ${err.message}`);
@@ -399,23 +393,23 @@ export default function AdminPage() {
     switch (role) {
       case 'ADMIN':
         return {
-          background: 'rgba(212, 175, 55, 0.15)',
-          border: '1px solid rgba(212, 175, 55, 0.4)',
-          color: '#f3e5ab',
+          background: '#FDF8EB',
+          border: '1px solid rgba(184, 141, 34, 0.4)',
+          color: '#8C6810',
           icon: ShieldCheck,
           label: 'ADMIN'
         };
       case 'USER_PREMIUM':
         return {
-          background: 'rgba(16, 185, 129, 0.15)',
+          background: '#ECFDF5',
           border: '1px solid rgba(16, 185, 129, 0.4)',
-          color: '#6ee7b7',
+          color: '#065F46',
           icon: Crown,
           label: 'USER PREMIUM'
         };
       default:
         return {
-          background: 'rgba(255, 255, 255, 0.06)',
+          background: '#FAF8F5',
           border: '1px solid var(--border-clean)',
           color: 'var(--text-muted)',
           icon: UserCheck,
@@ -430,7 +424,7 @@ export default function AdminPage() {
       {/* TOAST FLUTUANTE DE NOTIFICAÇÃO */}
       {toast && (
         <div style={{ position: 'fixed', bottom: 'var(--space-6)', right: 'var(--space-6)', zIndex: 1000 }}>
-          <div className="glass-card animate-fadeIn flex items-center" style={{ gap: 'var(--space-3)', padding: 'var(--space-4) var(--space-6)', background: toast.type === 'error' ? 'rgba(239, 68, 68, 0.9)' : 'rgba(16, 185, 129, 0.9)', color: 'white', fontWeight: 600, fontSize: 'var(--text-sm)' }}>
+          <div className="glass-card animate-fadeIn flex items-center" style={{ gap: 'var(--space-3)', padding: 'var(--space-4) var(--space-6)', background: toast.type === 'error' ? '#DC2626' : '#059669', color: '#FFFFFF', fontWeight: 600, fontSize: 'var(--text-sm)', boxShadow: '0 10px 30px rgba(0,0,0,0.2)' }}>
             {toast.type === 'error' ? <AlertCircle style={{ width: 'var(--text-lg)', height: 'var(--text-lg)' }} /> : <CheckCircle2 style={{ width: 'var(--text-lg)', height: 'var(--text-lg)' }} />}
             <span>{toast.text}</span>
           </div>
@@ -440,20 +434,20 @@ export default function AdminPage() {
       {/* ── CABEÇALHO DO PAINEL ── */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between" style={{ gap: 'var(--space-4)', paddingBottom: 'var(--space-5)', borderBottom: '1px solid var(--border-clean)' }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
-          <span className="inline-flex items-center" style={{ gap: 'var(--space-2)', padding: `var(--space-1) var(--space-3)`, borderRadius: '99px', background: 'rgba(212, 175, 55, 0.15)', border: '1px solid rgba(212, 175, 55, 0.3)', fontSize: 'var(--text-xs)', fontWeight: 700, color: 'var(--gold-light)', alignSelf: 'flex-start' }}>
+          <span className="inline-flex items-center" style={{ gap: 'var(--space-2)', padding: `4px 14px`, borderRadius: '99px', background: '#FDF8EB', border: '1px solid rgba(184, 141, 34, 0.3)', fontSize: 'var(--text-xs)', fontWeight: 700, color: '#8C6810', alignSelf: 'flex-start', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
             <ShieldCheck style={{ width: 'var(--text-sm)', height: 'var(--text-sm)', color: 'var(--gold-accent)' }} />
             Painel Administrativo
           </span>
-          <h1 style={{ fontFamily: 'var(--font-heading)', fontSize: 'var(--text-4xl)', color: 'white', lineHeight: 1.2 }}>
+          <h1 style={{ fontFamily: 'var(--font-heading)', fontSize: 'var(--text-4xl)', color: 'var(--text-main)', lineHeight: 1.2, fontWeight: 700 }}>
             Gestão & Configurações
           </h1>
-          <p style={{ fontSize: 'var(--text-sm)', color: 'var(--text-muted)' }}>
+          <p style={{ fontSize: 'var(--text-sm)', color: 'var(--text-secondary)' }}>
             Administre usuários, papéis de acesso e chaves de APIs do VinoVision AI
           </p>
         </div>
 
         {/* SUB-NAVEGAÇÃO DO ADMIN */}
-        <div className="flex items-center" style={{ background: 'rgba(255,255,255,0.05)', padding: 'var(--space-1)', borderRadius: '99px', border: '1px solid var(--border-clean)', gap: 'var(--space-1)' }}>
+        <div className="flex items-center" style={{ background: '#F2EDE4', padding: '4px', borderRadius: '99px', border: '1px solid rgba(0,0,0,0.06)', gap: '4px' }}>
           <button
             onClick={() => setActiveAdminTab('users')}
             className="flex items-center font-semibold transition-all"
@@ -465,7 +459,8 @@ export default function AdminPage() {
               border: 'none',
               cursor: 'pointer',
               background: activeAdminTab === 'users' ? 'var(--wine-primary)' : 'transparent',
-              color: activeAdminTab === 'users' ? 'var(--gold-light)' : 'var(--text-muted)'
+              color: activeAdminTab === 'users' ? '#FFFFFF' : 'var(--text-secondary)',
+              boxShadow: activeAdminTab === 'users' ? '0 4px 12px rgba(114,27,41,0.22)' : 'none'
             }}
           >
             <Users style={{ width: 'var(--text-base)', height: 'var(--text-base)' }} />
@@ -483,7 +478,8 @@ export default function AdminPage() {
               border: 'none',
               cursor: 'pointer',
               background: activeAdminTab === 'connections' ? 'var(--wine-primary)' : 'transparent',
-              color: activeAdminTab === 'connections' ? 'var(--gold-light)' : 'var(--text-muted)'
+              color: activeAdminTab === 'connections' ? '#FFFFFF' : 'var(--text-secondary)',
+              boxShadow: activeAdminTab === 'connections' ? '0 4px 12px rgba(114,27,41,0.22)' : 'none'
             }}
           >
             <Plug style={{ width: 'var(--text-base)', height: 'var(--text-base)' }} />
@@ -499,58 +495,58 @@ export default function AdminPage() {
         <>
           {/* CARDS DE ESTATÍSTICAS */}
           <div className="grid grid-cols-1 sm:grid-cols-4" style={{ gap: 'var(--space-4)' }}>
-            <div className="glass-card flex items-center" style={{ padding: 'var(--space-5)', gap: 'var(--space-4)' }}>
-              <div style={{ width: 'clamp(2.5rem,4vw,3rem)', height: 'clamp(2.5rem,4vw,3rem)', borderRadius: 'var(--radius-lg)', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border-clean)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                <Users style={{ width: 'var(--text-xl)', height: 'var(--text-xl)', color: 'white' }} />
+            <div className="glass-card flex items-center" style={{ padding: 'var(--space-5)', gap: 'var(--space-4)', background: '#FFFFFF' }}>
+              <div style={{ width: 'clamp(2.5rem,4vw,3.25rem)', height: 'clamp(2.5rem,4vw,3.25rem)', borderRadius: 'var(--radius-lg)', background: '#FAF8F5', border: '1px solid var(--border-clean)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <Users style={{ width: 'var(--text-xl)', height: 'var(--text-xl)', color: 'var(--text-main)' }} />
               </div>
               <div>
                 <p style={{ fontSize: 'var(--text-xs)', textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 700, color: 'var(--text-muted)' }}>Total Usuários</p>
-                <h3 style={{ fontFamily: 'var(--font-heading)', fontSize: 'var(--text-2xl)', color: 'white', marginTop: 'var(--space-1)' }}>{totalUsers}</h3>
+                <h3 style={{ fontFamily: 'var(--font-heading)', fontSize: 'var(--text-2xl)', color: 'var(--text-main)', marginTop: '2px', fontWeight: 700 }}>{totalUsers}</h3>
               </div>
             </div>
 
-            <div className="glass-card flex items-center" style={{ padding: 'var(--space-5)', gap: 'var(--space-4)' }}>
-              <div style={{ width: 'clamp(2.5rem,4vw,3rem)', height: 'clamp(2.5rem,4vw,3rem)', borderRadius: 'var(--radius-lg)', background: 'rgba(212, 175, 55, 0.15)', border: '1px solid rgba(212, 175, 55, 0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <div className="glass-card flex items-center" style={{ padding: 'var(--space-5)', gap: 'var(--space-4)', background: '#FFFFFF' }}>
+              <div style={{ width: 'clamp(2.5rem,4vw,3.25rem)', height: 'clamp(2.5rem,4vw,3.25rem)', borderRadius: 'var(--radius-lg)', background: '#FDF8EB', border: '1px solid rgba(184, 141, 34, 0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                 <ShieldCheck style={{ width: 'var(--text-xl)', height: 'var(--text-xl)', color: 'var(--gold-accent)' }} />
               </div>
               <div>
                 <p style={{ fontSize: 'var(--text-xs)', textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 700, color: 'var(--gold-accent)' }}>Admins</p>
-                <h3 style={{ fontFamily: 'var(--font-heading)', fontSize: 'var(--text-2xl)', color: 'white', marginTop: 'var(--space-1)' }}>{adminCount}</h3>
+                <h3 style={{ fontFamily: 'var(--font-heading)', fontSize: 'var(--text-2xl)', color: 'var(--text-main)', marginTop: '2px', fontWeight: 700 }}>{adminCount}</h3>
               </div>
             </div>
 
-            <div className="glass-card flex items-center" style={{ padding: 'var(--space-5)', gap: 'var(--space-4)' }}>
-              <div style={{ width: 'clamp(2.5rem,4vw,3rem)', height: 'clamp(2.5rem,4vw,3rem)', borderRadius: 'var(--radius-lg)', background: 'rgba(16, 185, 129, 0.15)', border: '1px solid rgba(16, 185, 129, 0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                <Crown style={{ width: 'var(--text-xl)', height: 'var(--text-xl)', color: '#6ee7b7' }} />
+            <div className="glass-card flex items-center" style={{ padding: 'var(--space-5)', gap: 'var(--space-4)', background: '#FFFFFF' }}>
+              <div style={{ width: 'clamp(2.5rem,4vw,3.25rem)', height: 'clamp(2.5rem,4vw,3.25rem)', borderRadius: 'var(--radius-lg)', background: '#ECFDF5', border: '1px solid rgba(16, 185, 129, 0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <Crown style={{ width: 'var(--text-xl)', height: 'var(--text-xl)', color: '#065F46' }} />
               </div>
               <div>
-                <p style={{ fontSize: 'var(--text-xs)', textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 700, color: '#6ee7b7' }}>User Premium</p>
-                <h3 style={{ fontFamily: 'var(--font-heading)', fontSize: 'var(--text-2xl)', color: 'white', marginTop: 'var(--space-1)' }}>{premiumCount}</h3>
+                <p style={{ fontSize: 'var(--text-xs)', textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 700, color: '#065F46' }}>User Premium</p>
+                <h3 style={{ fontFamily: 'var(--font-heading)', fontSize: 'var(--text-2xl)', color: 'var(--text-main)', marginTop: '2px', fontWeight: 700 }}>{premiumCount}</h3>
               </div>
             </div>
 
-            <div className="glass-card flex items-center" style={{ padding: 'var(--space-5)', gap: 'var(--space-4)' }}>
-              <div style={{ width: 'clamp(2.5rem,4vw,3rem)', height: 'clamp(2.5rem,4vw,3rem)', borderRadius: 'var(--radius-lg)', background: 'rgba(255,255,255,0.03)', border: '1px solid var(--border-clean)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <div className="glass-card flex items-center" style={{ padding: 'var(--space-5)', gap: 'var(--space-4)', background: '#FFFFFF' }}>
+              <div style={{ width: 'clamp(2.5rem,4vw,3.25rem)', height: 'clamp(2.5rem,4vw,3.25rem)', borderRadius: 'var(--radius-lg)', background: '#FAF8F5', border: '1px solid var(--border-clean)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                 <UserCheck style={{ width: 'var(--text-xl)', height: 'var(--text-xl)', color: 'var(--text-muted)' }} />
               </div>
               <div>
                 <p style={{ fontSize: 'var(--text-xs)', textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 700, color: 'var(--text-muted)' }}>User Commum</p>
-                <h3 style={{ fontFamily: 'var(--font-heading)', fontSize: 'var(--text-2xl)', color: 'white', marginTop: 'var(--space-1)' }}>{commonCount}</h3>
+                <h3 style={{ fontFamily: 'var(--font-heading)', fontSize: 'var(--text-2xl)', color: 'var(--text-main)', marginTop: '2px', fontWeight: 700 }}>{commonCount}</h3>
               </div>
             </div>
           </div>
 
           {/* BARRA DE PESQUISA E FILTROS */}
-          <div className="glass-card flex flex-col sm:flex-row items-center justify-between" style={{ padding: 'var(--space-5)', gap: 'var(--space-4)' }}>
+          <div className="glass-card flex flex-col sm:flex-row items-center justify-between" style={{ padding: 'var(--space-5)', gap: 'var(--space-4)', background: '#FFFFFF' }}>
             <div style={{ position: 'relative', width: '100%', maxWidth: '24rem' }}>
-              <Search style={{ position: 'absolute', left: 'var(--space-3)', top: '50%', transform: 'translateY(-50%)', width: 'var(--text-base)', height: 'var(--text-base)', color: 'var(--gold-accent)', pointerEvents: 'none' }} />
+              <Search style={{ position: 'absolute', left: 'var(--space-4)', top: '50%', transform: 'translateY(-50%)', width: 'var(--text-base)', height: 'var(--text-base)', color: 'var(--gold-accent)', pointerEvents: 'none' }} />
               <input
                 type="text"
                 placeholder="Buscar por e-mail ou nome…"
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
-                style={{ width: '100%', background: 'rgba(11,5,8,0.8)', border: '1px solid var(--border-clean)', borderRadius: 'var(--radius-lg)', paddingLeft: 'calc(var(--space-3) + var(--text-base) + var(--space-2))', paddingRight: 'var(--space-4)', paddingTop: 'var(--space-2)', paddingBottom: 'var(--space-2)', fontSize: 'var(--text-sm)', color: 'white', outline: 'none', transition: 'border-color 0.2s' }}
-                onFocus={e => e.target.style.borderColor = 'rgba(212,175,55,0.6)'}
+                style={{ width: '100%', background: '#FAF8F5', border: '1px solid var(--border-clean)', borderRadius: 'var(--radius-lg)', paddingLeft: 'calc(var(--space-4) + var(--text-base) + var(--space-2))', paddingRight: 'var(--space-4)', paddingTop: 'var(--space-3)', paddingBottom: 'var(--space-3)', fontSize: 'var(--text-sm)', color: 'var(--text-main)', outline: 'none', transition: 'border-color 0.2s', boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.02)' }}
+                onFocus={e => e.target.style.borderColor = 'rgba(184,141,34,0.6)'}
                 onBlur={e => e.target.style.borderColor = 'var(--border-clean)'}
               />
             </div>
@@ -562,33 +558,37 @@ export default function AdminPage() {
                 { id: 'ADMIN', label: 'ADMIN' },
                 { id: 'USER_PREMIUM', label: 'USER PREMIUM' },
                 { id: 'USER_COMMON', label: 'USER COMMUM' },
-              ].map(f => (
-                <button
-                  key={f.id}
-                  onClick={() => setRoleFilter(f.id)}
-                  style={{
-                    padding: `var(--space-2) var(--space-4)`,
-                    borderRadius: '99px',
-                    fontSize: 'var(--text-xs)',
-                    fontWeight: 600,
-                    border: 'none',
-                    cursor: 'pointer',
-                    transition: 'all 0.2s',
-                    background: roleFilter === f.id ? 'var(--wine-primary)' : 'transparent',
-                    color: roleFilter === f.id ? 'var(--gold-light)' : 'var(--text-muted)'
-                  }}
-                >
-                  {f.label}
-                </button>
-              ))}
+              ].map(f => {
+                const isActive = roleFilter === f.id;
+                return (
+                  <button
+                    key={f.id}
+                    onClick={() => setRoleFilter(f.id)}
+                    style={{
+                      padding: `var(--space-2) var(--space-4)`,
+                      borderRadius: '99px',
+                      fontSize: 'var(--text-xs)',
+                      fontWeight: 600,
+                      border: 'none',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s',
+                      background: isActive ? 'var(--wine-primary)' : '#FAF8F5',
+                      color: isActive ? '#FFFFFF' : 'var(--text-secondary)',
+                      boxShadow: isActive ? '0 2px 8px rgba(114,27,41,0.2)' : 'none'
+                    }}
+                  >
+                    {f.label}
+                  </button>
+                );
+              })}
             </div>
           </div>
 
           {/* TABELA DE USUÁRIOS */}
-          <div className="glass-card overflow-hidden" style={{ padding: 'var(--space-6)', display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
+          <div className="glass-card overflow-hidden" style={{ padding: 'var(--space-6)', display: 'flex', flexDirection: 'column', gap: 'var(--space-4)', background: '#FFFFFF' }}>
             {loadingUsers ? (
               <div style={{ padding: 'var(--space-12)', textAlign: 'center', color: 'var(--text-muted)' }}>
-                <div style={{ width: 'var(--text-3xl)', height: 'var(--text-3xl)', border: '2px solid var(--border-clean)', borderTopColor: 'var(--gold-accent)', borderRadius: '99px', animation: 'spin 0.8s linear infinite', margin: '0 auto var(--space-4)' }} />
+                <div style={{ width: 'var(--text-3xl)', height: 'var(--text-3xl)', border: '2px solid rgba(184,141,34,0.2)', borderTopColor: 'var(--wine-primary)', borderRadius: '99px', animation: 'spin 0.8s linear infinite', margin: '0 auto var(--space-4)' }} />
                 Carregando usuários…
               </div>
             ) : filteredProfiles.length === 0 ? (
@@ -599,12 +599,12 @@ export default function AdminPage() {
               <div style={{ width: '100%', overflowX: 'auto' }}>
                 <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
                   <thead>
-                    <tr style={{ borderBottom: '1px solid var(--border-clean)', color: 'var(--gold-accent)', fontSize: 'var(--text-xs)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-                      <th style={{ padding: 'var(--space-3) var(--space-4)' }}>Usuário</th>
+                    <tr style={{ borderBottom: '1px solid var(--border-clean)', color: 'var(--gold-accent)', fontSize: 'var(--text-xs)', textTransform: 'uppercase', letterSpacing: '0.08em', background: '#FAF8F5' }}>
+                      <th style={{ padding: 'var(--space-3) var(--space-4)', borderRadius: 'var(--radius-md) 0 0 var(--radius-md)' }}>Usuário</th>
                       <th style={{ padding: 'var(--space-3) var(--space-4)' }}>E-mail</th>
                       <th style={{ padding: 'var(--space-3) var(--space-4)' }}>Role Atual</th>
                       <th style={{ padding: 'var(--space-3) var(--space-4)' }}>Alterar Role</th>
-                      <th style={{ padding: 'var(--space-3) var(--space-4)' }}>Criado em</th>
+                      <th style={{ padding: 'var(--space-3) var(--space-4)', borderRadius: '0 var(--radius-md) var(--radius-md) 0' }}>Criado em</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -615,30 +615,30 @@ export default function AdminPage() {
                       const isUpdating = updatingId === p.id;
 
                       return (
-                        <tr key={p.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.03)', transition: 'background 0.2s' }}
-                          onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.02)'}
+                        <tr key={p.id} style={{ borderBottom: '1px solid rgba(0,0,0,0.04)', transition: 'background 0.2s' }}
+                          onMouseEnter={e => e.currentTarget.style.background = '#FAF8F5'}
                           onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
                         >
                           <td style={{ padding: 'var(--space-4)' }}>
                             <div className="flex items-center" style={{ gap: 'var(--space-3)' }}>
-                              <div style={{ width: '2.25rem', height: '2.25rem', borderRadius: '99px', background: 'linear-gradient(135deg, #800e26, #d4af37)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 'var(--text-xs)', color: 'white', flexShrink: 0 }}>
+                              <div style={{ width: '2.5rem', height: '2.5rem', borderRadius: '99px', background: 'linear-gradient(135deg, #721B29, #B88D22)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 'var(--text-xs)', color: '#FFFFFF', flexShrink: 0 }}>
                                 {(p.email || 'U').substring(0, 2).toUpperCase()}
                               </div>
                               <div>
-                                <p style={{ fontSize: 'var(--text-sm)', fontWeight: 600, color: 'white' }}>
+                                <p style={{ fontSize: 'var(--text-sm)', fontWeight: 600, color: 'var(--text-main)' }}>
                                   {p.display_name || p.email?.split('@')[0] || 'Usuário'}
-                                  {isCurrent && <span style={{ marginLeft: 'var(--space-2)', fontSize: 'calc(var(--text-xs) * 0.85)', background: 'rgba(212,175,55,0.2)', color: 'var(--gold-light)', padding: '2px 8px', borderRadius: '99px' }}>Você</span>}
+                                  {isCurrent && <span style={{ marginLeft: 'var(--space-2)', fontSize: 'calc(var(--text-xs) * 0.85)', background: '#FDF8EB', color: '#8C6810', padding: '2px 8px', borderRadius: '99px', border: '1px solid rgba(184,141,34,0.3)', fontWeight: 700 }}>Você</span>}
                                 </p>
                               </div>
                             </div>
                           </td>
 
-                          <td style={{ padding: 'var(--space-4)', fontSize: 'var(--text-sm)', color: 'var(--text-muted)' }}>
+                          <td style={{ padding: 'var(--space-4)', fontSize: 'var(--text-sm)', color: 'var(--text-secondary)' }}>
                             {p.email}
                           </td>
 
                           <td style={{ padding: 'var(--space-4)' }}>
-                            <span className="inline-flex items-center" style={{ gap: 'var(--space-1)', padding: `var(--space-1) var(--space-3)`, borderRadius: '99px', fontSize: 'var(--text-xs)', fontWeight: 700, background: badgeStyle.background, border: badgeStyle.border, color: badgeStyle.color }}>
+                            <span className="inline-flex items-center" style={{ gap: 'var(--space-1)', padding: `3px 10px`, borderRadius: '99px', fontSize: 'var(--text-xs)', fontWeight: 700, background: badgeStyle.background, border: badgeStyle.border, color: badgeStyle.color }}>
                               <BadgeIcon style={{ width: 'var(--text-xs)', height: 'var(--text-xs)' }} />
                               {badgeStyle.label}
                             </span>
@@ -650,20 +650,20 @@ export default function AdminPage() {
                               disabled={isUpdating}
                               onChange={e => handleRoleChange(p.id, e.target.value)}
                               style={{
-                                background: 'rgba(11,5,8,0.9)',
+                                background: '#FAF8F5',
                                 border: '1px solid var(--border-clean)',
                                 borderRadius: 'var(--radius-md)',
                                 padding: `var(--space-2) var(--space-3)`,
                                 fontSize: 'var(--text-xs)',
                                 fontWeight: 600,
-                                color: 'var(--gold-light)',
+                                color: 'var(--text-main)',
                                 outline: 'none',
                                 cursor: isUpdating ? 'wait' : 'pointer'
                               }}
                             >
-                              <option value="USER_COMMON" style={{ background: '#0b0508', color: 'white' }}>USER COMMUM</option>
-                              <option value="USER_PREMIUM" style={{ background: '#0b0508', color: '#6ee7b7' }}>USER PREMIUM</option>
-                              <option value="ADMIN" style={{ background: '#0b0508', color: '#f3e5ab' }}>ADMIN</option>
+                              <option value="USER_COMMON">USER COMMUM</option>
+                              <option value="USER_PREMIUM">USER PREMIUM</option>
+                              <option value="ADMIN">ADMIN</option>
                             </select>
                           </td>
 
@@ -688,11 +688,11 @@ export default function AdminPage() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
 
           {/* BARRA DE AÇÕES: BOTÃO DE ADICIONAR CONEXÃO */}
-          <div className="flex items-center justify-between" style={{ padding: 'var(--space-4) var(--space-6)', background: 'rgba(255,255,255,0.02)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-clean)' }}>
+          <div className="flex items-center justify-between" style={{ padding: 'var(--space-5) var(--space-6)', background: '#FFFFFF', borderRadius: 'var(--radius-xl)', border: '1px solid var(--border-clean)', boxShadow: 'var(--shadow-sm)' }}>
             <div>
-              <h3 style={{ fontSize: 'var(--text-lg)', fontWeight: 700, color: 'white' }}>Gerenciador de Conexões de API</h3>
-              <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>
-                Adicione, teste ou remova integrações de serviços de visão e bancos de vinhos
+              <h3 style={{ fontSize: 'var(--text-lg)', fontWeight: 700, color: 'var(--text-main)', fontFamily: 'var(--font-heading)' }}>Gerenciador de Conexões de API</h3>
+              <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-secondary)' }}>
+                Configure provedores de inteligência visual e banco global de vinhos
               </p>
             </div>
 
@@ -710,13 +710,13 @@ export default function AdminPage() {
           {/* LISTAGEM DINÂMICA DE CONEXÕES ATIVAS */}
           {loadingConnections ? (
             <div style={{ padding: 'var(--space-12)', textAlign: 'center', color: 'var(--text-muted)' }}>
-              <div style={{ width: 'var(--text-3xl)', height: 'var(--text-3xl)', border: '2px solid var(--border-clean)', borderTopColor: 'var(--gold-accent)', borderRadius: '99px', animation: 'spin 0.8s linear infinite', margin: '0 auto var(--space-4)' }} />
+              <div style={{ width: 'var(--text-3xl)', height: 'var(--text-3xl)', border: '2px solid rgba(184,141,34,0.2)', borderTopColor: 'var(--wine-primary)', borderRadius: '99px', animation: 'spin 0.8s linear infinite', margin: '0 auto var(--space-4)' }} />
               Carregando conexões cadastradas…
             </div>
           ) : connectionsList.length === 0 ? (
-            <div className="glass-card animate-fadeIn" style={{ padding: 'var(--space-12)', textAlign: 'center', color: 'var(--text-muted)' }}>
+            <div className="glass-card animate-fadeIn" style={{ padding: 'var(--space-12)', textAlign: 'center', color: 'var(--text-muted)', background: '#FFFFFF' }}>
               <Server style={{ width: 'var(--text-3xl)', height: 'var(--text-3xl)', margin: '0 auto var(--space-3)', color: 'var(--gold-accent)' }} />
-              <h4 style={{ fontSize: 'var(--text-lg)', color: 'white', fontWeight: 600 }}>Nenhuma conexão de API cadastrada</h4>
+              <h4 style={{ fontSize: 'var(--text-lg)', color: 'var(--text-main)', fontWeight: 600 }}>Nenhuma conexão de API cadastrada</h4>
               <p style={{ fontSize: 'var(--text-sm)', marginTop: 'var(--space-1)' }}>Clique no botão <strong>"+ Adicionar Conexão"</strong> acima para configurar uma nova API (ex: Google Gemini, OpenAI, etc.).</p>
             </div>
           ) : (
@@ -727,24 +727,24 @@ export default function AdminPage() {
               const isSaving = !!savingMap[item.keyName];
 
               return (
-                <div key={item.keyName} className="glass-card overflow-hidden animate-fadeIn" style={{ padding: 'var(--space-8)', display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
+                <div key={item.keyName} className="glass-card overflow-hidden animate-fadeIn" style={{ padding: 'var(--space-8)', display: 'flex', flexDirection: 'column', gap: 'var(--space-6)', background: '#FFFFFF' }}>
                   
                   {/* Cabeçalho do Card */}
                   <div className="flex items-center justify-between" style={{ paddingBottom: 'var(--space-4)', borderBottom: '1px solid var(--border-clean)' }}>
                     <div className="flex items-center" style={{ gap: 'var(--space-4)' }}>
-                      <div style={{ width: 'clamp(2.5rem,4vw,3rem)', height: 'clamp(2.5rem,4vw,3rem)', borderRadius: 'var(--radius-lg)', background: item.type === 'gemini' ? 'rgba(59,130,246,0.2)' : item.type === 'openai' ? 'rgba(16,185,129,0.2)' : 'rgba(212,175,55,0.2)', border: '1px solid rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                        <Sparkles style={{ width: 'var(--text-xl)', height: 'var(--text-xl)', color: item.type === 'gemini' ? '#60a5fa' : item.type === 'openai' ? '#6ee7b7' : 'var(--gold-accent)' }} />
+                      <div style={{ width: 'clamp(2.5rem,4vw,3.25rem)', height: 'clamp(2.5rem,4vw,3.25rem)', borderRadius: 'var(--radius-lg)', background: item.type === 'gemini' ? '#EFF6FF' : item.type === 'openai' ? '#ECFDF5' : '#FDF8EB', border: '1px solid rgba(0,0,0,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                        <Sparkles style={{ width: 'var(--text-xl)', height: 'var(--text-xl)', color: item.type === 'gemini' ? '#2563EB' : item.type === 'openai' ? '#059669' : 'var(--gold-accent)' }} />
                       </div>
                       <div>
                         <div className="flex items-center" style={{ gap: 'var(--space-2)' }}>
-                          <h3 style={{ fontFamily: 'var(--font-heading)', fontSize: 'var(--text-2xl)', color: 'white' }}>{item.name}</h3>
+                          <h3 style={{ fontFamily: 'var(--font-heading)', fontSize: 'var(--text-2xl)', color: 'var(--text-main)', fontWeight: 700 }}>{item.name}</h3>
                           {item.badge && (
-                            <span style={{ fontSize: 'calc(var(--text-xs) * 0.85)', padding: '2px 8px', borderRadius: '99px', background: 'rgba(212,175,55,0.2)', color: 'var(--gold-light)', border: '1px solid rgba(212,175,55,0.3)', fontWeight: 700 }}>
+                            <span style={{ fontSize: 'calc(var(--text-xs) * 0.85)', padding: '2px 8px', borderRadius: '99px', background: '#FDF8EB', color: '#8C6810', border: '1px solid rgba(184,141,34,0.3)', fontWeight: 700 }}>
                               {item.badge}
                             </span>
                           )}
                         </div>
-                        <p style={{ fontSize: 'var(--text-sm)', color: 'var(--text-muted)', marginTop: '2px' }}>
+                        <p style={{ fontSize: 'var(--text-sm)', color: 'var(--text-secondary)', marginTop: '2px' }}>
                           {item.description}
                         </p>
                       </div>
@@ -755,12 +755,12 @@ export default function AdminPage() {
                       <span className="inline-flex items-center font-bold"
                         style={{
                           gap: 'var(--space-1)',
-                          padding: `var(--space-1) var(--space-3)`,
+                          padding: `4px 12px`,
                           borderRadius: '99px',
                           fontSize: 'var(--text-xs)',
-                          background: item.value?.trim() ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)',
-                          border: `1px solid ${item.value?.trim() ? 'rgba(16, 185, 129, 0.3)' : 'rgba(239, 68, 68, 0.3)'}`,
-                          color: item.value?.trim() ? '#6ee7b7' : '#f87171'
+                          background: item.value?.trim() ? '#ECFDF5' : '#FEF2F2',
+                          border: `1px solid ${item.value?.trim() ? '#A7F3D0' : '#FECACA'}`,
+                          color: item.value?.trim() ? '#065F46' : '#DC2626'
                         }}
                       >
                         {item.value?.trim() ? '🟢 Configurada' : '🔴 Sem Chave'}
@@ -769,10 +769,10 @@ export default function AdminPage() {
                       <button
                         type="button"
                         onClick={() => handleDeleteConnectionItem(item)}
-                        style={{ background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.3)', color: '#f87171', borderRadius: 'var(--radius-md)', padding: 'var(--space-2) var(--space-3)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 'var(--space-1)', fontSize: 'var(--text-xs)', fontWeight: 600, transition: 'all 0.2s' }}
+                        style={{ background: '#FEF2F2', border: '1px solid #FECACA', color: '#DC2626', borderRadius: 'var(--radius-md)', padding: 'var(--space-2) var(--space-3)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 'var(--space-1)', fontSize: 'var(--text-xs)', fontWeight: 600, transition: 'all 0.2s' }}
                         title={`Excluir conexão ${item.name}`}
-                        onMouseEnter={e => e.currentTarget.style.background = 'rgba(239,68,68,0.3)'}
-                        onMouseLeave={e => e.currentTarget.style.background = 'rgba(239,68,68,0.15)'}
+                        onMouseEnter={e => e.currentTarget.style.background = '#FEE2E2'}
+                        onMouseLeave={e => e.currentTarget.style.background = '#FEF2F2'}
                       >
                         <Trash2 style={{ width: 'var(--text-base)', height: 'var(--text-base)' }} />
                         Excluir
@@ -781,7 +781,7 @@ export default function AdminPage() {
                   </div>
 
                   {/* Campo de Chave */}
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)', maxWidth: '40rem' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)', maxWidth: '42rem' }}>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
                       <label style={{ fontSize: 'var(--text-xs)', textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 700, color: 'var(--gold-accent)' }}>
                         Chave da API / Token ({item.keyName})
@@ -794,8 +794,8 @@ export default function AdminPage() {
                           placeholder="Chave da API…"
                           value={item.value || ''}
                           onChange={e => handleKeyChangeInList(item.keyName, e.target.value)}
-                          style={{ width: '100%', background: 'rgba(11,5,8,0.9)', border: '1px solid var(--border-clean)', borderRadius: 'var(--radius-md)', paddingLeft: 'calc(var(--space-3) + var(--text-base) + var(--space-2))', paddingRight: 'calc(var(--space-3) + var(--text-xl))', paddingTop: 'var(--space-3)', paddingBottom: 'var(--space-3)', fontSize: 'var(--text-sm)', color: 'white', outline: 'none', transition: 'border-color 0.2s', fontFamily: isShowingKey ? 'monospace' : 'sans-serif' }}
-                          onFocus={e => e.target.style.borderColor = 'rgba(212,175,55,0.6)'}
+                          style={{ width: '100%', background: '#FAF8F5', border: '1px solid var(--border-clean)', borderRadius: 'var(--radius-md)', paddingLeft: 'calc(var(--space-3) + var(--text-base) + var(--space-2))', paddingRight: 'calc(var(--space-3) + var(--text-xl))', paddingTop: 'var(--space-3)', paddingBottom: 'var(--space-3)', fontSize: 'var(--text-sm)', color: 'var(--text-main)', outline: 'none', transition: 'border-color 0.2s', fontFamily: isShowingKey ? 'monospace' : 'sans-serif' }}
+                          onFocus={e => e.target.style.borderColor = 'rgba(184,141,34,0.6)'}
                           onBlur={e => e.target.style.borderColor = 'var(--border-clean)'}
                         />
                         <button type="button" onClick={() => toggleShowKey(item.keyName)}
@@ -807,9 +807,9 @@ export default function AdminPage() {
 
                     {/* Status do Teste */}
                     {statusObj.message && (
-                      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 'var(--space-2)', padding: 'var(--space-3)', borderRadius: 'var(--radius-md)', background: statusObj.state === 'error' ? 'rgba(239,68,68,0.12)' : statusObj.state === 'success' ? 'rgba(16,185,129,0.12)' : 'rgba(212,175,55,0.12)', border: `1px solid ${statusObj.state === 'error' ? 'rgba(239,68,68,0.3)' : statusObj.state === 'success' ? 'rgba(16,185,129,0.3)' : 'rgba(212,175,55,0.3)'}` }}>
-                        {statusObj.state === 'error' ? <AlertCircle style={{ width: 'var(--text-base)', height: 'var(--text-base)', color: '#f87171', flexShrink: 0, marginTop: '2px' }} /> : statusObj.state === 'success' ? <CheckCircle2 style={{ width: 'var(--text-base)', height: 'var(--text-base)', color: '#6ee7b7', flexShrink: 0, marginTop: '2px' }} /> : <RefreshCw style={{ width: 'var(--text-base)', height: 'var(--text-base)', color: 'var(--gold-light)', flexShrink: 0, marginTop: '2px', animation: 'spin 1s linear infinite' }} />}
-                        <p style={{ fontSize: 'var(--text-xs)', color: statusObj.state === 'error' ? '#f87171' : statusObj.state === 'success' ? '#6ee7b7' : 'var(--gold-light)', lineHeight: 1.6 }}>
+                      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 'var(--space-2)', padding: 'var(--space-3)', borderRadius: 'var(--radius-md)', background: statusObj.state === 'error' ? '#FEF2F2' : statusObj.state === 'success' ? '#ECFDF5' : '#FDF8EB', border: `1px solid ${statusObj.state === 'error' ? '#FECACA' : statusObj.state === 'success' ? '#A7F3D0' : '#FDE68A'}` }}>
+                        {statusObj.state === 'error' ? <AlertCircle style={{ width: 'var(--text-base)', height: 'var(--text-base)', color: '#DC2626', flexShrink: 0, marginTop: '2px' }} /> : statusObj.state === 'success' ? <CheckCircle2 style={{ width: 'var(--text-base)', height: 'var(--text-base)', color: '#059669', flexShrink: 0, marginTop: '2px' }} /> : <RefreshCw style={{ width: 'var(--text-base)', height: 'var(--text-base)', color: '#8C6810', flexShrink: 0, marginTop: '2px', animation: 'spin 1s linear infinite' }} />}
+                        <p style={{ fontSize: 'var(--text-xs)', color: statusObj.state === 'error' ? '#B91C1C' : statusObj.state === 'success' ? '#047857' : '#8C6810', lineHeight: 1.6, fontWeight: 500 }}>
                           {statusObj.message}
                         </p>
                       </div>
@@ -832,7 +832,7 @@ export default function AdminPage() {
                         type="button"
                         onClick={() => handleSaveConnectionItem(item)}
                         disabled={isSaving}
-                        className="btn-gold"
+                        className="btn-wine"
                         style={{ gap: 'var(--space-2)' }}
                       >
                         <Save style={{ width: 'var(--text-base)', height: 'var(--text-base)' }} />
@@ -847,21 +847,21 @@ export default function AdminPage() {
           )}
 
           {/* CARD SUPABASE BANCO DE DADOS */}
-          <div className="glass-card overflow-hidden" style={{ padding: 'var(--space-8)', display: 'flex', flexDirection: 'column', gap: 'var(--space-5)' }}>
+          <div className="glass-card overflow-hidden" style={{ padding: 'var(--space-8)', display: 'flex', flexDirection: 'column', gap: 'var(--space-5)', background: '#FFFFFF' }}>
             <div className="flex items-center justify-between" style={{ paddingBottom: 'var(--space-4)', borderBottom: '1px solid var(--border-clean)' }}>
               <div className="flex items-center" style={{ gap: 'var(--space-4)' }}>
-                <div style={{ width: 'clamp(2.5rem,4vw,3rem)', height: 'clamp(2.5rem,4vw,3rem)', borderRadius: 'var(--radius-lg)', background: 'rgba(16,185,129,0.2)', border: '1px solid rgba(16,185,129,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                  <Database style={{ width: 'var(--text-xl)', height: 'var(--text-xl)', color: '#6ee7b7' }} />
+                <div style={{ width: 'clamp(2.5rem,4vw,3.25rem)', height: 'clamp(2.5rem,4vw,3.25rem)', borderRadius: 'var(--radius-lg)', background: '#ECFDF5', border: '1px solid rgba(16,185,129,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <Database style={{ width: 'var(--text-xl)', height: 'var(--text-xl)', color: '#059669' }} />
                 </div>
                 <div>
-                  <h3 style={{ fontFamily: 'var(--font-heading)', fontSize: 'var(--text-2xl)', color: 'white' }}>Supabase Database & Auth</h3>
-                  <p style={{ fontSize: 'var(--text-sm)', color: 'var(--text-muted)', marginTop: '2px' }}>
+                  <h3 style={{ fontFamily: 'var(--font-heading)', fontSize: 'var(--text-2xl)', color: 'var(--text-main)', fontWeight: 700 }}>Supabase Database & Auth</h3>
+                  <p style={{ fontSize: 'var(--text-sm)', color: 'var(--text-secondary)', marginTop: '2px' }}>
                     Banco de dados PostgreSQL em nuvem e sistema de autenticação de usuários
                   </p>
                 </div>
               </div>
 
-              <span className="inline-flex items-center font-bold" style={{ gap: 'var(--space-1)', padding: `var(--space-1) var(--space-3)`, borderRadius: '99px', fontSize: 'var(--text-xs)', background: 'rgba(16, 185, 129, 0.15)', border: '1px solid rgba(16, 185, 129, 0.3)', color: '#6ee7b7' }}>
+              <span className="inline-flex items-center font-bold" style={{ gap: 'var(--space-1)', padding: `4px 12px`, borderRadius: '99px', fontSize: 'var(--text-xs)', background: '#ECFDF5', border: '1px solid #A7F3D0', color: '#065F46' }}>
                 🟢 Conectado ao Projeto
               </span>
             </div>
@@ -872,8 +872,8 @@ export default function AdminPage() {
 
       {/* ── MODAL ADICIONAR NOVA CONEXÃO ── */}
       {showAddModal && (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 'var(--space-4)' }}>
-          <div className="glass-card animate-fadeIn" style={{ width: '100%', maxWidth: '32rem', padding: 'var(--space-8)', display: 'flex', flexDirection: 'column', gap: 'var(--space-6)', position: 'relative' }}>
+        <div style={{ position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(20, 14, 17, 0.6)', backdropFilter: 'blur(10px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 'var(--space-4)' }}>
+          <div className="glass-card animate-fadeIn" style={{ width: '100%', maxWidth: '32rem', padding: 'var(--space-8)', display: 'flex', flexDirection: 'column', gap: 'var(--space-6)', position: 'relative', background: '#FFFFFF', border: '1px solid rgba(184,141,34,0.3)', boxShadow: '0 25px 50px -12px rgba(35,20,25,0.2)' }}>
             
             <button
               type="button"
@@ -884,12 +884,12 @@ export default function AdminPage() {
             </button>
 
             <div className="flex items-center" style={{ gap: 'var(--space-3)' }}>
-              <div style={{ width: '2.5rem', height: '2.5rem', borderRadius: 'var(--radius-md)', background: 'rgba(212,175,55,0.2)', border: '1px solid rgba(212,175,55,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <div style={{ width: '2.75rem', height: '2.75rem', borderRadius: 'var(--radius-md)', background: '#FDF8EB', border: '1px solid rgba(184,141,34,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <Plus style={{ width: 'var(--text-lg)', height: 'var(--text-lg)', color: 'var(--gold-accent)' }} />
               </div>
               <div>
-                <h3 style={{ fontFamily: 'var(--font-heading)', fontSize: 'var(--text-xl)', color: 'white' }}>Adicionar Nova Conexão de API</h3>
-                <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>Configure um novo provedor de dados ou IA</p>
+                <h3 style={{ fontFamily: 'var(--font-heading)', fontSize: 'var(--text-xl)', color: 'var(--text-main)', fontWeight: 700 }}>Adicionar Nova Conexão de API</h3>
+                <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-secondary)' }}>Configure um novo provedor de dados ou IA</p>
               </div>
             </div>
 
@@ -899,7 +899,7 @@ export default function AdminPage() {
                 <select
                   value={newConnType}
                   onChange={e => setNewConnType(e.target.value)}
-                  style={{ background: 'rgba(11,5,8,0.9)', border: '1px solid var(--border-clean)', borderRadius: 'var(--radius-md)', padding: 'var(--space-3)', fontSize: 'var(--text-sm)', color: 'white', outline: 'none' }}
+                  style={{ background: '#FAF8F5', border: '1px solid var(--border-clean)', borderRadius: 'var(--radius-md)', padding: 'var(--space-3)', fontSize: 'var(--text-sm)', color: 'var(--text-main)', outline: 'none' }}
                 >
                   <option value="gemini">Google Gemini 2.0 Flash (Gratuito no AI Studio)</option>
                   <option value="openai">OpenAI GPT-4o Mini (Visão API)</option>
@@ -918,7 +918,7 @@ export default function AdminPage() {
                     value={newConnName}
                     onChange={e => setNewConnName(e.target.value)}
                     required
-                    style={{ background: 'rgba(11,5,8,0.9)', border: '1px solid var(--border-clean)', borderRadius: 'var(--radius-md)', padding: 'var(--space-3)', fontSize: 'var(--text-sm)', color: 'white', outline: 'none' }}
+                    style={{ background: '#FAF8F5', border: '1px solid var(--border-clean)', borderRadius: 'var(--radius-md)', padding: 'var(--space-3)', fontSize: 'var(--text-sm)', color: 'var(--text-main)', outline: 'none' }}
                   />
                 </div>
               )}
@@ -931,7 +931,7 @@ export default function AdminPage() {
                   value={newConnKey}
                   onChange={e => setNewConnKey(e.target.value)}
                   required
-                  style={{ background: 'rgba(11,5,8,0.9)', border: '1px solid var(--border-clean)', borderRadius: 'var(--radius-md)', padding: 'var(--space-3)', fontSize: 'var(--text-sm)', color: 'white', outline: 'none', fontFamily: 'monospace' }}
+                  style={{ background: '#FAF8F5', border: '1px solid var(--border-clean)', borderRadius: 'var(--radius-md)', padding: 'var(--space-3)', fontSize: 'var(--text-sm)', color: 'var(--text-main)', outline: 'none', fontFamily: 'monospace' }}
                 />
               </div>
 
@@ -939,7 +939,7 @@ export default function AdminPage() {
                 <button type="button" onClick={() => setShowAddModal(false)} className="btn-ghost">
                   Cancelar
                 </button>
-                <button type="submit" className="btn-gold">
+                <button type="submit" className="btn-wine">
                   Salvar Conexão
                 </button>
               </div>

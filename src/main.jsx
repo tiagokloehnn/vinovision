@@ -22,41 +22,33 @@ class ErrorBoundary extends Component {
       return (
         <div style={{
           minHeight: '100vh',
-          backgroundColor: '#0d0609',
-          color: '#f8f9fa',
+          backgroundColor: '#F8F5F0',
+          color: '#1A1416',
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
           justifyContent: 'center',
           padding: '2rem',
-          fontFamily: 'sans-serif',
+          fontFamily: 'var(--font-sans)',
           textAlign: 'center'
         }}>
           <div style={{
-            background: 'rgba(128, 14, 38, 0.4)',
-            border: '1px solid #d4af37',
-            borderRadius: '20px',
+            background: '#FFFFFF',
+            border: '1px solid rgba(184, 141, 34, 0.3)',
+            borderRadius: '24px',
             padding: '2.5rem',
-            maxWidth: '500px',
-            boxShadow: '0 10px 30px rgba(0,0,0,0.5)'
+            maxWidth: '520px',
+            boxShadow: '0 20px 40px -10px rgba(35, 20, 25, 0.1)'
           }}>
-            <h2 style={{ fontSize: '1.5rem', color: '#f3e5ab', marginBottom: '1rem', fontFamily: 'serif' }}>
-              🍷 VinoVision AI - Ocorreu um Erro
+            <h2 style={{ fontSize: '1.6rem', color: '#721B29', marginBottom: '1rem', fontFamily: 'var(--font-heading)' }}>
+              🍷 VinoVision AI — Ocorreu um Erro
             </h2>
-            <p style={{ fontSize: '0.9rem', color: '#b0a3ab', marginBottom: '1.5rem' }}>
-              {this.state.error?.toString() || 'Erro desconhecido ao carregar a interface.'}
+            <p style={{ fontSize: '0.925rem', color: '#73646B', marginBottom: '1.75rem', lineHeight: 1.7 }}>
+              {this.state.error?.toString() || 'Erro inesperado ao renderizar os componentes.'}
             </p>
             <button
               onClick={() => window.location.reload()}
-              style={{
-                background: 'linear-gradient(135deg, #d4af37, #aa7c11)',
-                color: '#0d0609',
-                border: 'none',
-                padding: '10px 24px',
-                borderRadius: '30px',
-                fontWeight: 'bold',
-                cursor: 'pointer'
-              }}
+              className="btn-gold"
             >
               Recarregar Aplicação
             </button>

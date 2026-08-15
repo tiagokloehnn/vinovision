@@ -22,13 +22,13 @@ function AppInner() {
   const [isScanning, setIsScanning]     = useState(false);
   const [scanProgress, setScanProgress] = useState({ stage: 'init', percent: 0, text: '' });
 
-  // Enquanto carrega a sessão, mostra um loader elegante com fallbacks nativos de CSS
+  // Enquanto carrega a sessão, mostra um loader clean e elegante
   if (authLoading) {
     return (
-      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0b0508', color: '#f5f0f3' }}>
-        <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem' }}>
-          <div style={{ width: '42px', height: '42px', border: '3px solid rgba(255, 255, 255, 0.1)', borderTopColor: '#d4af37', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
-          <p style={{ fontSize: '0.9rem', color: '#9e8e96', fontFamily: 'sans-serif' }}>Carregando VinoVision AI…</p>
+      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-canvas)', color: 'var(--text-main)' }}>
+        <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1.25rem' }}>
+          <div style={{ width: '44px', height: '44px', border: '3px solid rgba(184, 141, 34, 0.2)', borderTopColor: 'var(--wine-primary)', borderRadius: '50%', animation: 'spin 0.8s cubic-bezier(0.68, -0.55, 0.27, 1.55) infinite' }} />
+          <p style={{ fontSize: '0.925rem', color: 'var(--text-muted)', fontFamily: 'var(--font-sans)', fontWeight: 500, letterSpacing: '0.02em' }}>Carregando VinoVision AI…</p>
         </div>
       </div>
     );
@@ -58,7 +58,7 @@ function AppInner() {
   };
 
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: 'var(--bg-dark)', color: 'var(--text-main)', overflowX: 'hidden' }}>
+    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: 'var(--bg-canvas)', color: 'var(--text-main)', overflowX: 'hidden' }}>
       <Navbar activeTab={activeTab} setActiveTab={setActiveTab} cellarCount={cellarWines.length} />
 
       <main style={{ flex: 1, width: '100%', maxWidth: '1280px', margin: '0 auto', padding: `var(--space-8) var(--space-5) var(--space-16)` }}>
@@ -91,10 +91,10 @@ function AppInner() {
         )}
       </main>
 
-      <footer style={{ width: '100%', borderTop: '1px solid var(--border-clean)', padding: `var(--space-8) var(--space-6)`, background: 'rgba(7,3,5,0.8)', textAlign: 'center' }}>
+      <footer style={{ width: '100%', borderTop: '1px solid var(--border-clean)', padding: `var(--space-8) var(--space-6)`, background: 'rgba(255, 255, 255, 0.7)', backdropFilter: 'blur(16px)', textAlign: 'center' }}>
         <div style={{ maxWidth: '1280px', margin: '0 auto', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 'var(--space-2)' }}>
-          <span style={{ fontFamily: 'var(--font-heading)', fontSize: 'var(--text-lg)', fontWeight: 700, color: 'white' }}>VinoVision AI</span>
-          <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>© 2026 VinoVision. Todos os direitos reservados.</p>
+          <span style={{ fontFamily: 'var(--font-heading)', fontSize: 'var(--text-lg)', fontWeight: 700, color: 'var(--wine-primary)', letterSpacing: '-0.01em' }}>VinoVision AI</span>
+          <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>© 2026 VinoVision AI. Sommelier de Alta Precisão & Inteligência Enológica.</p>
         </div>
       </footer>
     </div>
