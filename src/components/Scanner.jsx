@@ -1,13 +1,28 @@
-import React, { useState, useRef } from 'react';
-import { Camera, Upload, Sparkles, RefreshCw, CheckCircle, ShieldAlert, Wine } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Camera, Upload, Sparkles, RefreshCw, CheckCircle, ShieldAlert, Wine, KeyRound, ArrowRight, Info } from 'lucide-react';
+import { SAMPLE_WINES } from '../data/sampleWines';
+import { hasActiveVisionKeys } from '../utils/aiScanner';
 
 export default function Scanner({ onScanStart, isScanning, scanProgress }) {
   const [activeMode, setActiveMode] = useState('upload');
   const [selectedFile, setSelectedFile] = useState(null);
   const [previewUrl, setPreviewUrl] = useState(null);
+  const [hasAiKey, setHasAiKey] = useState(false);
+  const [checkingKey, setCheckingKey] = useState(true);
   const videoRef = useRef(null);
   const [cameraError, setCameraError] = useState(null);
   const streamRef = useRef(null);
+
+  useEffect(() => {
+    let isMounted = true;
+    hasActiveVisionKeys().then(active => {
+      if (isMounted) {
+        setHasAiKey(active);
+        setCheckingKey(false);
+      }
+    });
+    return () => { isMounted = false; };
+  }, []);
 
   const handleFileChange = (e) => {
     const file = e.target.files?.[0];
@@ -59,9 +74,9 @@ export default function Scanner({ onScanStart, isScanning, scanProgress }) {
   ];
 
   const FEATURES = [
-    { Icon: Sparkles,     title: 'OCR & Visão IA',    desc: 'Leitura instantânea de vinícola e safra' },
-    { Icon: Wine,         title: 'Perfil Sensorial',  desc: 'Corpo, taninos, acidez e notas olfativas' },
-    { Icon: CheckCircle,  title: 'Harmonização',      desc: 'Sugestões gastronômicas de alta cozinha' },
+    { Icon: Sparkles,     title: 'OCR & Visão IA',    desc: 'Leitura instantânea de vinícola, safra e terroir' },
+    { Icon: Wine,         title: 'Perfil Sensorial',  desc: 'Radar de corpo, taninos, acidez e doçura' },
+    { Icon: CheckCircle,  title: 'Harmonização',      desc: 'Sugestões gastronômicas e temperatura ideal' },
   ];
 
   return (
@@ -80,6 +95,17 @@ export default function Scanner({ onScanStart, isScanning, scanProgress }) {
         <p style={{ fontSize: 'var(--text-base)', color: 'var(--text-secondary)', lineHeight: 1.7, maxWidth: '34rem' }}>
           Fotografe ou envie a imagem da garrafa para obter ficha técnica completa, safra, notas de degustação e harmonizações exclusivas.
         </p>
+
+        {/* ── BADGE DE STATUS DA IA ── */}
+        {!checkingKey && (
+          <div style={{ marginTop: 'var(--space-1)', display: 'inline-flex', alignItems: 'center', gap: 'var(--space-2)', padding: '6px 14px', borderRadius: '99px', background: hasAiKey ? '#ECFDF5' : '#FFFBEB', border: `1px solid ${hasAiKey ? '#A7F3D0' : '#FDE68A'}`, fontSize: '0.8rem', fontWeight: 600, color: hasAiKey ? '#065F46' : '#92400E' }}>
+            <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: hasAiKey ? '#10B981' : '#F59E0B', display: 'inline-block' }} />
+            {hasAiKey
+              ? 'IA de Visão Computacional Ativa (Gemini / OpenAI)'
+              : 'Modo Demonstração Ativo — Você pode testar amostras ou adicionar chave no Painel Admin'
+            }
+          </div>
+        )}
       </div>
 
       {/* ── SELETOR DE MODO ── */}
@@ -205,6 +231,61 @@ export default function Scanner({ onScanStart, isScanning, scanProgress }) {
               </div>
         )}
 
+      </div>
+
+      {/* ── GALERIA DE DEMONSTRAÇÃO / TESTE RÁPIDO ── */}
+      <div className="w-full" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 'var(--space-2)' }}>
+          <div>
+            <h3 style={{ fontFamily: 'var(--font-heading)', fontSize: 'var(--text-xl)', color: 'var(--text-main)', fontWeight: 700 }}>
+              Rótulos de Demonstração
+            </h3>
+            <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-secondary)' }}>
+              Toque em qualquer rótulo abaixo para testar instantaneamente a análise enológica
+            </p>
+          </div>
+          <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--wine-primary)', background: '#FDF2F4', padding: '4px 10px', borderRadius: '99px' }}>
+            {SAMPLE_WINES.length} Rótulos Disponíveis
+          </span>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {SAMPLE_WINES.slice(0, 3).map((sample) => (
+            <div
+              key={sample.id}
+              onClick={() => triggerScan(sample.id)}
+              className="glass-card"
+              style={{
+                padding: 'var(--space-3)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 'var(--space-3)',
+                cursor: 'pointer',
+                transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+                border: '1px solid rgba(0,0,0,0.06)'
+              }}
+              onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--gold-accent)'; e.currentTarget.style.transform = 'translateY(-2px)'; }}
+              onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(0,0,0,0.06)'; e.currentTarget.style.transform = 'translateY(0)'; }}
+            >
+              <div style={{ width: '48px', height: '64px', borderRadius: 'var(--radius-md)', overflow: 'hidden', flexShrink: 0, border: '1px solid rgba(0,0,0,0.08)' }}>
+                <img src={sample.labelThumbnail || sample.image} alt={sample.name} className="w-full h-full object-cover" />
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <span>{sample.flagEmoji}</span>
+                  <span style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>{sample.vintage}</span>
+                </div>
+                <h4 style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-main)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', margin: '2px 0' }}>
+                  {sample.name}
+                </h4>
+                <p style={{ fontSize: '0.75rem', color: 'var(--wine-primary)', fontWeight: 600 }}>
+                  {sample.winery}
+                </p>
+              </div>
+              <ArrowRight style={{ width: '16px', height: '16px', color: 'var(--text-muted)', flexShrink: 0 }} />
+            </div>
+          ))}
+        </div>
       </div>
 
       {/* ── FEATURE TILES DE LUXO ── */}

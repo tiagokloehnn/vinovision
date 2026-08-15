@@ -257,9 +257,23 @@ export default function AdminPage() {
         showToast('success', `Conexão ${item.name} testada e aprovada!`);
       } else if (item.type === 'gemini') {
         const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${val}`);
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        setStatusMap(prev => ({ ...prev, [keyName]: { state: 'success', message: 'Chave do Google Gemini Válida!' } }));
-        showToast('success', 'Conexão Google Gemini testada!');
+        if (!res.ok) {
+          const errJson = await res.json().catch(() => ({}));
+          throw new Error(errJson.error?.message || `HTTP ${res.status}`);
+        }
+        const data = await res.json();
+        setStatusMap(prev => ({ ...prev, [keyName]: { state: 'success', message: `Google Gemini Ativo! (${data.models?.length || 0} modelos disponíveis)` } }));
+        showToast('success', 'Conexão Google Gemini validada com sucesso!');
+      } else if (item.type === 'openai') {
+        const res = await fetch('https://api.openai.com/v1/models', {
+          headers: { 'Authorization': `Bearer ${val}` }
+        });
+        if (!res.ok) {
+          const errJson = await res.json().catch(() => ({}));
+          throw new Error(errJson.error?.message || `HTTP ${res.status}`);
+        }
+        setStatusMap(prev => ({ ...prev, [keyName]: { state: 'success', message: 'Chave OpenAI GPT-4o Válida!' } }));
+        showToast('success', 'Conexão OpenAI validada!');
       } else {
         setStatusMap(prev => ({ ...prev, [keyName]: { state: 'success', message: 'Serviço de chave pronto para uso.' } }));
         showToast('success', `Conexão ${item.name} pronta!`);

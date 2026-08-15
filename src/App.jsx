@@ -14,13 +14,14 @@ import { scanWineLabel } from './utils/aiScanner';
 
 // ── App interno (usa os hooks de auth e adega) ─────────────────────────
 function AppInner() {
-  const { user, loading: authLoading } = useAuth();
+  const { user, profile, loading: authLoading } = useAuth();
   const { cellarWines, toggleWine, removeWine, isInCellar } = useCellar();
 
   const [activeTab, setActiveTab]       = useState('scanner');
   const [scannedWine, setScannedWine]   = useState(null);
   const [isScanning, setIsScanning]     = useState(false);
   const [scanProgress, setScanProgress] = useState({ stage: 'init', percent: 0, text: '' });
+  const [scanError, setScanError]       = useState(null);
 
   // Enquanto carrega a sessão, mostra um loader clean e elegante
   if (authLoading) {
@@ -39,14 +40,15 @@ function AppInner() {
 
   const handleStartScan = async (inputData) => {
     setIsScanning(true);
+    setScanError(null);
     setScanProgress({ stage: 'init', percent: 5, text: 'Otimizando rótulo…' });
     try {
       const wine = await scanWineLabel(inputData, setScanProgress);
       setScannedWine(wine);
       setActiveTab('details');
     } catch (err) {
-      console.error(err);
-      alert(err.message || 'Erro ao processar a imagem.');
+      console.error('[VinoVision Scan Error]:', err);
+      setScanError(err.message || 'Erro ao processar a imagem do rótulo.');
     } finally {
       setIsScanning(false);
     }
@@ -87,6 +89,50 @@ function AppInner() {
           </RoleGuard>
         )}
       </main>
+
+      {/* ── MODAL DE AVISO / ERRO DE ESCANEAMENTO ── */}
+      {scanError && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 100, background: 'rgba(26,20,22,0.65)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}>
+          <div className="glass-card animate-scaleUp" style={{ maxWidth: '28rem', width: '100%', padding: 'clamp(1.5rem, 4vw, 2rem)', background: '#FFFFFF', borderRadius: 'var(--radius-2xl)', boxShadow: '0 20px 50px rgba(0,0,0,0.25)', display: 'flex', flexDirection: 'column', gap: '1.25rem', position: 'relative' }}>
+            <button
+              onClick={() => setScanError(null)}
+              style={{ position: 'absolute', top: '1.25rem', right: '1.25rem', background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', fontSize: '1.25rem', lineHeight: 1 }}
+              title="Fechar"
+            >
+              ✕
+            </button>
+            <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: '#FDF2F4', border: '1px solid rgba(114,27,41,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <span style={{ fontSize: '1.5rem' }}>🍷</span>
+            </div>
+            <div>
+              <h3 style={{ fontFamily: 'var(--font-heading)', fontSize: '1.25rem', color: 'var(--text-main)', fontWeight: 700 }}>
+                Aviso da IA Sommelier
+              </h3>
+              <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', marginTop: '0.5rem', lineHeight: 1.6 }}>
+                {scanError}
+              </p>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginTop: '0.25rem' }}>
+              {profile?.role === 'ADMIN' && (
+                <button
+                  onClick={() => { setScanError(null); setActiveTab('admin'); }}
+                  className="btn-wine"
+                  style={{ width: '100%', justifyContent: 'center' }}
+                >
+                  Ir para Conexões no Painel Admin
+                </button>
+              )}
+              <button
+                onClick={() => setScanError(null)}
+                className="btn-ghost"
+                style={{ width: '100%', justifyContent: 'center' }}
+              >
+                Fechar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <footer style={{ width: '100%', borderTop: '1px solid var(--border-clean)', padding: `var(--space-8) var(--space-6)`, background: 'rgba(255, 255, 255, 0.7)', backdropFilter: 'blur(16px)', textAlign: 'center' }}>
         <div style={{ maxWidth: '1280px', margin: '0 auto', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 'var(--space-2)' }}>

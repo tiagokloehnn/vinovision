@@ -46,25 +46,30 @@ export async function getAllActiveApiKeys() {
     activeKeys.push({ keyName: 'openai_api_key', value: openaiLocal });
   }
 
-  // 3. Fallback para chave de demonstração ativa (VITE_GROQ_API_KEY, VITE_GEMINI_API_KEY, etc.)
-  const defaultGroq = (
-    import.meta.env.VITE_GROQ_API_KEY ||
-    ['gsk_M446VtzGokIYCGxRtsPD', 'WGdyb3FYHdXGBKp4DYAN5Vy5XbBKeJsV'].join('')
-  ).trim();
+  // 3. Fallback para chaves em variáveis de ambiente (.env)
   const envGemini = (import.meta.env.VITE_GEMINI_API_KEY || '').trim();
   const envOpenAI = (import.meta.env.VITE_OPENAI_API_KEY || '').trim();
+  const envGroq = (import.meta.env.VITE_GROQ_API_KEY || '').trim();
 
-  if (defaultGroq && !activeKeys.some(k => k.keyName === 'groq_api_key')) {
-    activeKeys.push({ keyName: 'groq_api_key', value: defaultGroq });
-  }
   if (envGemini && !activeKeys.some(k => k.keyName === 'gemini_api_key')) {
     activeKeys.push({ keyName: 'gemini_api_key', value: envGemini });
   }
   if (envOpenAI && !activeKeys.some(k => k.keyName === 'openai_api_key')) {
     activeKeys.push({ keyName: 'openai_api_key', value: envOpenAI });
   }
+  if (envGroq && !activeKeys.some(k => k.keyName === 'groq_api_key')) {
+    activeKeys.push({ keyName: 'groq_api_key', value: envGroq });
+  }
 
   return activeKeys;
+}
+
+/**
+ * Retorna se há ao menos uma chave de IA configurada.
+ */
+export async function hasActiveVisionKeys() {
+  const keys = await getAllActiveApiKeys();
+  return keys.length > 0;
 }
 
 /**
@@ -78,19 +83,21 @@ export async function scanWineLabel(imageInput, onProgress = () => {}) {
     const matchedSample = SAMPLE_WINES.find(w => w.id === imageInput);
     if (matchedSample) {
       onProgress({ stage: 'init', percent: 30, text: 'Carregando rótulo da biblioteca…' });
-      await sleep(400);
+      await sleep(350);
+      onProgress({ stage: 'ai_vision', percent: 75, text: 'Consultando ficha técnica enológica…' });
+      await sleep(300);
       onProgress({ stage: 'done', percent: 100, text: 'Vinho identificado com sucesso!' });
       return { ...matchedSample, scannedAt: new Date().toISOString() };
     }
   }
 
-  // Se houver qualquer chave ativa configurada pelo Admin
+  // Se houver chaves ativas configuradas
   if (activeKeys.length > 0 && (imageInput instanceof File || (typeof imageInput === 'string' && imageInput.startsWith('data:image')))) {
     let lastError = null;
 
     for (const keyObj of activeKeys) {
       try {
-        // Gemini API Key (Recomendado - Gratuito no Google AI Studio)
+        // Google Gemini API (Recomendado - Gratuito no Google AI Studio)
         if (keyObj.keyName.includes('gemini') || keyObj.value.startsWith('AIza')) {
           onProgress({ stage: 'init', percent: 20, text: 'Otimizando foto para Google Gemini IA…' });
           const optimizedBase64 = await compressImageForVision(imageInput, 1024, 1024, 0.85);
@@ -98,7 +105,7 @@ export async function scanWineLabel(imageInput, onProgress = () => {}) {
           return await analyzeWineWithGemini(optimizedBase64, keyObj.value, onProgress);
         }
 
-        // OpenAI API Key
+        // OpenAI API (GPT-4o / GPT-4o Mini)
         if (keyObj.keyName.includes('openai') || keyObj.value.startsWith('sk-proj-') || keyObj.value.startsWith('sk-')) {
           onProgress({ stage: 'init', percent: 20, text: 'Otimizando foto para OpenAI GPT-4o…' });
           const optimizedBase64 = await compressImageForVision(imageInput, 1024, 1024, 0.85);
@@ -106,78 +113,78 @@ export async function scanWineLabel(imageInput, onProgress = () => {}) {
           return await analyzeWineWithOpenAI(optimizedBase64, keyObj.value, onProgress);
         }
 
-        // Groq API Key
-        if (keyObj.keyName === 'groq_api_key' || keyObj.value.startsWith('gsk_') || keyObj.keyName.includes('groq')) {
-          onProgress({ stage: 'init', percent: 20, text: 'Otimizando foto para Groq AI…' });
-          const optimizedBase64 = await compressImageForVision(imageInput, 1024, 1024, 0.85);
-          onProgress({ stage: 'ai_vision', percent: 65, text: 'Analisando rótulo com Groq Vision…' });
-          return await analyzeWineWithGroq(optimizedBase64, keyObj.value, onProgress);
-        }
-
-        // wineAPI.io Key
+        // wineAPI.io
         if (keyObj.keyName === 'wineapi_key' || keyObj.keyName.includes('wine')) {
           onProgress({ stage: 'init', percent: 25, text: 'Conectando à wineAPI.io…' });
           onProgress({ stage: 'ai_vision', percent: 65, text: 'Identificando rótulo na base wineAPI.io…' });
           return await analyzeWineWithWineAPI(imageInput, keyObj.value, onProgress);
+        }
+
+        // Groq API
+        if (keyObj.keyName === 'groq_api_key' || keyObj.value.startsWith('gsk_') || keyObj.keyName.includes('groq')) {
+          onProgress({ stage: 'init', percent: 20, text: 'Otimizando foto para Groq AI…' });
+          const optimizedBase64 = await compressImageForVision(imageInput, 1024, 1024, 0.85);
+          onProgress({ stage: 'ai_vision', percent: 65, text: 'Analisando rótulo com Groq…' });
+          return await analyzeWineWithGroq(optimizedBase64, keyObj.value, onProgress);
         }
       } catch (err) {
         console.warn(`[VinoVision] Exceção na chave (${keyObj.keyName}):`, err);
         lastError = err;
       }
     }
+
+    if (lastError) {
+      console.error('[VinoVision IA] Falha ao processar com as chaves configuradas:', lastError);
+      throw new Error(`Falha na IA de Visão: ${lastError.message || 'Erro ao processar imagem'}. Verifique sua chave no Painel Admin.`);
+    }
   }
 
-  // Fallback Inteligente de Visão: se nenhuma chave funcionou ou se houve estouro de cota/limite,
-  // processa a foto localmente via Motor Sommelier Inteligente sem travar a experiência do usuário!
-  onProgress({ stage: 'init', percent: 30, text: 'Processando rótulo via Motor Sommelier VinoVision…' });
-  await sleep(400);
-  onProgress({ stage: 'ai_vision', percent: 75, text: 'Gerando ficha técnica do vinho…' });
-  await sleep(300);
-  onProgress({ stage: 'done', percent: 100, text: 'Vinho analisado com sucesso!' });
-
-  return await analyzeWineWithSmartFallback(imageInput);
+  // Se nenhuma chave de IA de visão estiver configurada
+  throw new Error('Nenhuma chave de IA de Visão configurada. Para analisar rótulos reais por foto, configure uma chave gratuita do Google Gemini no Painel Admin (Conexões) ou selecione um dos vinhos de demonstração na galeria.');
 }
 
 /**
- * Envia a imagem do rótulo para os modelos do Google Gemini (testando gemini-1.5-flash, gemini-2.0-flash-lite, etc.)
+ * Envia a imagem do rótulo para os modelos do Google Gemini (testando gemini-2.5-flash, gemini-2.0-flash, gemini-1.5-flash, etc.)
  */
 async function analyzeWineWithGemini(base64DataUrl, apiKey, onProgress) {
   const pureBase64 = base64DataUrl.split(',')[1] || base64DataUrl;
 
-  // Lista com prioridade no gemini-1.5-flash (maior cota gratuita global disponível)
+  // Lista ordenada por prioridade nos modelos Gemini Flash mais recentes e rápidos
   const candidateGeminiModels = [
+    'gemini-2.5-flash',
+    'gemini-2.0-flash',
     'gemini-1.5-flash',
     'gemini-2.0-flash-lite',
-    'gemini-2.0-flash',
     'gemini-1.5-pro'
   ];
 
-  const promptText = `Você é um mestre sommelier e especialista em visão computacional de vinhos.
-Examine cuidadosamente esta foto de rótulo de vinho e extraia/identifique as informações reais contidas na imagem.
-Retorne EXCLUSIVAMENTE um objeto JSON válido (sem texto antes/depois ou markdown):
+  const promptText = `Você é um mestre sommelier de classe mundial e especialista em visão computacional e OCR de rótulos de vinhos.
+Examine cuidadosamente todos os detalhes visuais e textos desta foto de rótulo de vinho.
+Identifique com máxima fidelidade e precisão o nome exato do vinho, vinícola produtora, safra, tipo, uvas, teor alcoólico, país e região.
+Retorne EXCLUSIVAMENTE um objeto JSON válido (sem texto adicional antes ou depois, sem blocos markdown):
 
 {
-  "name": "Nome do vinho conforme rótulo",
+  "name": "Nome do vinho conforme impresso no rótulo",
   "winery": "Nome da Vinícola / Produtor",
-  "vintage": "Ano da Safra (ex: 2019 ou 'N.V.' se não houver)",
+  "vintage": "Ano da Safra (ex: 2021 ou 'N.V.' se não houver)",
   "type": "Red | White | Rose | Sparkling | Dessert",
-  "typeName": "Tipo de Vinho (ex: Vinho Rosé Suave, Tinto Reserva, Branco Seco, Espumante Brut)",
+  "typeName": "Tipo de Vinho (ex: Vinho Tinto Reserva, Vinho Branco Seco, Espumante Brut, Vinho Rosé)",
   "country": "País de origem",
-  "flagEmoji": "Emoji da bandeira do país",
+  "flagEmoji": "Emoji da bandeira do país de origem",
   "region": "Região Vitivinícola",
   "grapes": ["Casta 1", "Casta 2"],
-  "alcohol": "Teor alcoólico (ex: 9.5%)",
-  "rating": 4.5,
-  "reviewsCount": 240,
-  "priceEstimate": "Estimativa de preço em R$",
+  "alcohol": "Teor alcoólico (ex: 13.5%)",
+  "rating": 4.6,
+  "reviewsCount": 350,
+  "priceEstimate": "Estimativa de preço médio no Brasil em R$ (ex: R$ 120 - R$ 160)",
   "serveTemp": "Temperatura ideal de serviço (ex: 16°C - 18°C)",
-  "decantTime": "Tempo sugerido de decantação",
+  "decantTime": "Tempo sugerido de decantação (ex: 30 minutos ou 'Não requer')",
   "profile": { "body": 4, "tannin": 3, "acidity": 3, "sweetness": 1 },
   "aromas": [{ "name": "Nome do aroma", "icon": "Emoji" }],
-  "foodPairings": [{ "title": "Prato Sugerido", "category": "Categoria", "icon": "Emoji", "description": "Explicação" }],
-  "description": "Descrição sensorial detalhada e história sobre este vinho",
-  "sommelierNote": "Nota técnica do sommelier sobre o potencial de guarda e terroir",
-  "awards": ["Prêmio ou distinção se houver"]
+  "foodPairings": [{ "title": "Prato Sugerido", "category": "Categoria", "icon": "Emoji", "description": "Explicação harmônica" }],
+  "description": "Descrição sensorial detalhada, notas de prova e história sobre este vinho",
+  "sommelierNote": "Dica técnica do sommelier sobre harmonização, guarda e terroir",
+  "awards": ["Premiação ou distinção relevante se houver"]
 }`;
 
   let lastError = null;
@@ -194,10 +201,19 @@ Retorne EXCLUSIVAMENTE um objeto JSON válido (sem texto antes/depois ou markdow
             {
               parts: [
                 { text: promptText },
-                { inline_data: { mime_type: 'image/jpeg', data: pureBase64 } }
+                {
+                  inlineData: {
+                    mimeType: 'image/jpeg',
+                    data: pureBase64
+                  }
+                }
               ]
             }
-          ]
+          ],
+          generationConfig: {
+            responseMimeType: 'application/json',
+            temperature: 0.1
+          }
         })
       });
 
@@ -207,8 +223,8 @@ Retorne EXCLUSIVAMENTE um objeto JSON válido (sem texto antes/depois ou markdow
 
         console.warn(`[Gemini AI] Modelo ${modelName} retornou erro:`, errMsg);
 
-        if (response.status === 429 || errMsg.toLowerCase().includes('quota') || errMsg.toLowerCase().includes('rate limit')) {
-          lastError = new Error(`Cota excedida no modelo Gemini ${modelName}.`);
+        if (response.status === 429 || errMsg.toLowerCase().includes('quota') || errMsg.toLowerCase().includes('rate limit') || response.status === 404) {
+          lastError = new Error(`Cota ou modelo indisponível no Gemini ${modelName}: ${errMsg}`);
           continue;
         }
 
@@ -299,11 +315,22 @@ async function analyzeWineWithSmartFallback(imageInput) {
  * Envia a imagem para os modelos ativos da Groq
  */
 async function analyzeWineWithGroq(base64DataUrl, apiKey, onProgress, isRetry = false) {
-  // Modelos com suporte oficial e ativo a visão computacional (imagens) na Groq API
-  const candidateModels = [
+  // Lista de modelos multimodais com suporte a visão na Groq
+  let candidateModels = [
     'llama-3.2-11b-vision-preview',
-    'llama-3.2-90b-vision-preview'
+    'llama-3.2-90b-vision-preview',
+    'qwen-2.5-32b',
+    'llama-3.3-70b-versatile'
   ];
+
+  // Tenta obter dinamicamente os modelos disponíveis na conta Groq
+  try {
+    const activeOnAccount = await fetchActiveGroqModels(apiKey);
+    if (activeOnAccount.length > 0) {
+      const visionModels = activeOnAccount.filter(m => m.includes('vision') || m.includes('vl') || m.includes('preview') || m.includes('llama-3.3'));
+      if (visionModels.length > 0) candidateModels = [...visionModels, ...candidateModels];
+    }
+  } catch (e) {}
 
   const promptText = `Você é um mestre sommelier e especialista em visão computacional. Analise cuidadosamente a foto deste rótulo de vinho e retorne EXCLUSIVAMENTE um objeto JSON válido em português:
 {
