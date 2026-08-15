@@ -1,13 +1,45 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Star, MapPin, Calendar, Wine, Thermometer, Clock,
   Award, Bookmark, Check, Share2, ArrowLeft, Sparkles,
-  DollarSign, UtensilsCrossed, Quote, Percent
+  DollarSign, UtensilsCrossed, Quote, Percent, Edit3, MessageSquare, Tag, Heart
 } from 'lucide-react';
 import TastingRadar from './TastingRadar';
 
-export default function WineDetails({ wine, onBack, onSaveCellar, isSaved }) {
+export default function WineDetails({ wine, onBack, onSaveCellar, onUpdateReview, isSaved }) {
   if (!wine) return null;
+
+  const [personalRating, setPersonalRating] = useState(wine.userRating || 0);
+  const [hoverRating, setHoverRating]       = useState(0);
+  const [personalReview, setPersonalReview] = useState(wine.userReview || '');
+  const [personalOccasion, setPersonalOccasion] = useState(wine.userOccasion || '');
+  const [isEditing, setIsEditing]           = useState(!wine.userRating && !wine.userReview);
+  const [saveStatus, setSaveStatus]         = useState('idle'); // 'idle' | 'saving' | 'saved'
+
+  useEffect(() => {
+    setPersonalRating(wine.userRating || 0);
+    setPersonalReview(wine.userReview || '');
+    setPersonalOccasion(wine.userOccasion || '');
+    setIsEditing(!wine.userRating && !wine.userReview);
+  }, [wine]);
+
+  const RATING_LABELS = {
+    1: '1.0 — Não agradou',
+    2: '2.0 — Regular / Simples',
+    3: '3.0 — Bom vinho',
+    4: '4.0 — Muito bom / Recomendado',
+    5: '5.0 — Excepcional / Memorável'
+  };
+
+  const OCCASIONS = [
+    'Jantar Especial',
+    'Com Amigos',
+    'Comemoração',
+    'Dia a Dia',
+    'Churrasco',
+    'Queijos & Vinhos',
+    'Presente'
+  ];
 
   const handleShare = () => {
     if (navigator.share) {
@@ -17,6 +49,27 @@ export default function WineDetails({ wine, onBack, onSaveCellar, isSaved }) {
       alert('Link copiado!');
     }
   };
+
+  const handleSaveEvaluation = async () => {
+    if (!onUpdateReview) return;
+    setSaveStatus('saving');
+    try {
+      await onUpdateReview(wine, {
+        userRating: personalRating,
+        userReview: personalReview.trim(),
+        userOccasion: personalOccasion
+      });
+      setSaveStatus('saved');
+      setIsEditing(false);
+      setTimeout(() => setSaveStatus('idle'), 3000);
+    } catch (err) {
+      console.error(err);
+      setSaveStatus('idle');
+      alert('Erro ao salvar avaliação na adega.');
+    }
+  };
+
+  const activeDisplayRating = hoverRating || personalRating;
 
   return (
     <div className="w-full max-w-6xl mx-auto animate-fadeIn" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-8)', paddingBottom: 'var(--space-12)' }}>
@@ -70,11 +123,12 @@ export default function WineDetails({ wine, onBack, onSaveCellar, isSaved }) {
               {wine.typeName || wine.type}
             </div>
 
-            {/* Badge rating */}
+            {/* Badge rating da Crítica / Geral */}
             <div className="absolute flex items-center font-bold"
               style={{ bottom: 'var(--space-3)', right: 'var(--space-3)', background: '#FFFFFF', backdropFilter: 'blur(8px)', padding: `4px 12px`, borderRadius: 'var(--radius-md)', fontSize: 'var(--text-sm)', color: '#8C6810', gap: 'var(--space-1)', border: '1px solid rgba(184,141,34,0.3)', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}>
               <Star style={{ width: 'var(--text-base)', height: 'var(--text-base)', fill: '#D4AF37', color: '#D4AF37' }} />
-              {wine.rating}
+              <span>{wine.rating}</span>
+              <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)', fontWeight: 500 }}>Global</span>
             </div>
           </div>
 
@@ -130,10 +184,15 @@ export default function WineDetails({ wine, onBack, onSaveCellar, isSaved }) {
             </h1>
           </div>
 
-          {/* Descrição */}
-          <p style={{ fontSize: 'var(--text-base)', lineHeight: 1.8, color: 'var(--text-secondary)', wordBreak: 'break-word' }}>
-            {wine.description}
-          </p>
+          {/* Descrição Geral / O que falam sobre ele */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
+            <p style={{ fontSize: 'var(--text-xs)', textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--text-muted)', fontWeight: 700 }}>
+              Sobre Este Vinho (Ficha & Opinião Técnica):
+            </p>
+            <p style={{ fontSize: 'var(--text-base)', lineHeight: 1.8, color: 'var(--text-secondary)', wordBreak: 'break-word' }}>
+              {wine.description}
+            </p>
+          </div>
 
           {/* Castas */}
           <div style={{ paddingTop: 'var(--space-3)', borderTop: '1px solid var(--border-clean)', display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
@@ -151,7 +210,249 @@ export default function WineDetails({ wine, onBack, onSaveCellar, isSaved }) {
         </div>
       </div>
 
-      {/* ── BLOCO 2: PERFIL GUSTATIVO + AROMAS ── */}
+      {/* ── BLOCO 2: MINHA DEGUSTAÇÃO & AVALIAÇÃO PESSOAL (DESTAQUE LUXUOSO) ── */}
+      <div className="glass-card w-full overflow-hidden"
+        style={{
+          padding: 'clamp(1.25rem, 3vw, 2.25rem)',
+          background: 'linear-gradient(135deg, #FFFFFF 0%, #FAF8F5 100%)',
+          border: '1.5px solid rgba(184, 141, 34, 0.4)',
+          boxShadow: '0 12px 30px rgba(184, 141, 34, 0.08)',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 'var(--space-5)'
+        }}
+      >
+        {/* Cabeçalho da Minha Avaliação */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between" style={{ gap: 'var(--space-3)', paddingBottom: 'var(--space-4)', borderBottom: '1px solid rgba(184, 141, 34, 0.2)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
+            <div style={{ width: 'clamp(2.5rem,4vw,3rem)', height: 'clamp(2.5rem,4vw,3rem)', borderRadius: 'var(--radius-lg)', background: '#FDF8EB', border: '1px solid rgba(184,141,34,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <Heart style={{ width: 'var(--text-lg)', height: 'var(--text-lg)', color: 'var(--wine-primary)', fill: personalRating > 0 ? 'var(--wine-primary)' : 'none' }} />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h2 style={{ fontFamily: 'var(--font-heading)', fontSize: 'var(--text-2xl)', color: 'var(--text-main)', fontWeight: 700 }}>
+                  Minha Avaliação Pessoal
+                </h2>
+                <span style={{ fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 700, padding: '2px 8px', borderRadius: '99px', background: '#FDF8EB', color: '#8C6810', border: '1px solid rgba(184,141,34,0.3)' }}>
+                  Diário da Adega
+                </span>
+              </div>
+              <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-secondary)', marginTop: '2px' }}>
+                Sua nota e impressões exclusivas de prova ficam salvas para sempre na sua adega.
+              </p>
+            </div>
+          </div>
+
+          {!isEditing && (personalRating > 0 || personalReview) && (
+            <button
+              onClick={() => setIsEditing(true)}
+              className="btn-ghost"
+              style={{ padding: '6px 14px', fontSize: '0.8rem', gap: '6px' }}
+            >
+              <Edit3 style={{ width: '14px', height: '14px' }} />
+              Editar Minha Nota
+            </button>
+          )}
+        </div>
+
+        {/* MODO EXIBIÇÃO (QUANDO JÁ AVALIADO E NÃO ESTÁ EDITANDO) */}
+        {!isEditing && (personalRating > 0 || personalReview) ? (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between" style={{ gap: 'var(--space-3)', background: '#FFFFFF', padding: 'var(--space-4)', borderRadius: 'var(--radius-xl)', border: '1px solid var(--border-clean)' }}>
+              <div>
+                <span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 700 }}>
+                  Sua Classificação Pessoal:
+                </span>
+                <div className="flex items-center" style={{ gap: 'var(--space-2)', marginTop: '4px' }}>
+                  <div className="flex items-center" style={{ gap: '3px' }}>
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <Star
+                        key={star}
+                        style={{
+                          width: '22px',
+                          height: '22px',
+                          fill: star <= personalRating ? '#D4AF37' : '#E5E7EB',
+                          color: star <= personalRating ? '#D4AF37' : '#D1D5DB'
+                        }}
+                      />
+                    ))}
+                  </div>
+                  <span style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--wine-primary)', fontFamily: 'var(--font-heading)' }}>
+                    {personalRating.toFixed(1)} / 5.0
+                  </span>
+                  <span style={{ fontSize: '0.85rem', color: '#8C6810', fontWeight: 600 }}>
+                    ({RATING_LABELS[personalRating] || ''})
+                  </span>
+                </div>
+              </div>
+
+              {personalOccasion && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', background: '#FAF8F5', padding: '6px 14px', borderRadius: '99px', border: '1px solid var(--border-clean)', alignSelf: 'flex-start' }}>
+                  <Tag style={{ width: '14px', height: '14px', color: 'var(--gold-accent)' }} />
+                  <span style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-main)' }}>{personalOccasion}</span>
+                </div>
+              )}
+            </div>
+
+            {personalReview && (
+              <div style={{ background: '#FFFFFF', padding: 'var(--space-5)', borderRadius: 'var(--radius-xl)', border: '1px solid var(--border-clean)', display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
+                <span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 700 }}>
+                  Minhas Notas & Percepções de Prova:
+                </span>
+                <p style={{ fontSize: '0.95rem', color: 'var(--text-main)', lineHeight: 1.8, fontStyle: 'italic', background: '#FAF8F5', padding: '1rem', borderRadius: 'var(--radius-lg)', borderLeft: '4px solid var(--wine-primary)' }}>
+                  "{personalReview}"
+                </p>
+                {wine.userReviewedAt && (
+                  <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textAlign: 'right' }}>
+                    Avaliado em {new Date(wine.userReviewedAt).toLocaleDateString('pt-BR')}
+                  </span>
+                )}
+              </div>
+            )}
+          </div>
+        ) : (
+          /* MODO FORMULÁRIO DE AVALIAÇÃO */
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-5)' }}>
+            {/* 1. Seletor de Estrelas */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
+              <label style={{ fontSize: 'var(--text-xs)', textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 700, color: 'var(--text-main)' }}>
+                1. Sua Nota para este Vinho:
+              </label>
+              <div className="flex items-center flex-wrap" style={{ gap: 'var(--space-3)' }}>
+                <div className="flex items-center" style={{ gap: '6px' }}>
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <button
+                      key={star}
+                      type="button"
+                      onClick={() => setPersonalRating(star)}
+                      onMouseEnter={() => setHoverRating(star)}
+                      onMouseLeave={() => setHoverRating(0)}
+                      style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: '4px', transition: 'transform 0.15s ease' }}
+                      onMouseDown={e => e.currentTarget.style.transform = 'scale(0.9)'}
+                      onMouseUp={e => e.currentTarget.style.transform = 'scale(1.15)'}
+                    >
+                      <Star
+                        style={{
+                          width: '32px',
+                          height: '32px',
+                          fill: star <= activeDisplayRating ? '#D4AF37' : '#E5E7EB',
+                          color: star <= activeDisplayRating ? '#D4AF37' : '#D1D5DB',
+                          transition: 'all 0.2s ease'
+                        }}
+                      />
+                    </button>
+                  ))}
+                </div>
+
+                {activeDisplayRating > 0 && (
+                  <span className="animate-fadeIn" style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--wine-primary)', background: '#FDF8EB', padding: '4px 12px', borderRadius: '99px', border: '1px solid rgba(184,141,34,0.3)' }}>
+                    {RATING_LABELS[activeDisplayRating]}
+                  </span>
+                )}
+              </div>
+            </div>
+
+            {/* 2. Ocasião */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
+              <label style={{ fontSize: 'var(--text-xs)', textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 700, color: 'var(--text-main)' }}>
+                2. Ocasião / Momento da Degustação:
+              </label>
+              <div className="flex flex-wrap" style={{ gap: 'var(--space-2)' }}>
+                {OCCASIONS.map(occ => {
+                  const isSelected = personalOccasion === occ;
+                  return (
+                    <button
+                      key={occ}
+                      type="button"
+                      onClick={() => setPersonalOccasion(isSelected ? '' : occ)}
+                      style={{
+                        padding: '6px 14px',
+                        borderRadius: '99px',
+                        fontSize: '0.8rem',
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                        transition: 'all 0.2s ease',
+                        border: isSelected ? '1px solid var(--wine-primary)' : '1px solid var(--border-clean)',
+                        background: isSelected ? 'var(--wine-primary)' : '#FFFFFF',
+                        color: isSelected ? '#FFFFFF' : 'var(--text-secondary)'
+                      }}
+                    >
+                      {occ}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* 3. Descrição Pessoal */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
+              <label htmlFor="personal-review-input" style={{ fontSize: 'var(--text-xs)', textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 700, color: 'var(--text-main)' }}>
+                3. Minhas Impressões Pessoais (O que você achou desta garrafa?):
+              </label>
+              <textarea
+                id="personal-review-input"
+                rows={4}
+                value={personalReview}
+                onChange={e => setPersonalReview(e.target.value)}
+                placeholder="Descreva o que sentiu na taça: aromas marcantes, equilíbrio, como acompanhou o prato, se compraria novamente..."
+                style={{
+                  width: '100%',
+                  padding: 'var(--space-4)',
+                  borderRadius: 'var(--radius-lg)',
+                  border: '1px solid var(--border-clean)',
+                  background: '#FFFFFF',
+                  fontSize: '0.925rem',
+                  fontFamily: 'var(--font-sans)',
+                  color: 'var(--text-main)',
+                  lineHeight: 1.6,
+                  resize: 'vertical',
+                  outline: 'none',
+                  boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.04)'
+                }}
+                onFocus={e => e.currentTarget.style.borderColor = 'var(--gold-accent)'}
+                onBlur={e => e.currentTarget.style.borderColor = 'var(--border-clean)'}
+              />
+            </div>
+
+            {/* Botões de Ação */}
+            <div className="flex items-center flex-wrap" style={{ gap: 'var(--space-3)', marginTop: 'var(--space-2)' }}>
+              <button
+                type="button"
+                onClick={handleSaveEvaluation}
+                disabled={saveStatus === 'saving'}
+                className="btn-wine"
+                style={{ minWidth: '180px', justifyContent: 'center' }}
+              >
+                {saveStatus === 'saving' ? (
+                  'Salvando na Adega…'
+                ) : saveStatus === 'saved' ? (
+                  <><Check style={{ width: '18px', height: '18px' }} /> Avaliação Salva!</>
+                ) : (
+                  <><Bookmark style={{ width: '18px', height: '18px' }} /> Salvar Minha Avaliação</>
+                )}
+              </button>
+
+              {(wine.userRating || wine.userReview) && (
+                <button
+                  type="button"
+                  onClick={() => setIsEditing(false)}
+                  className="btn-ghost"
+                >
+                  Cancelar
+                </button>
+              )}
+
+              {saveStatus === 'saved' && (
+                <span className="animate-fadeIn" style={{ fontSize: '0.85rem', color: '#065F46', fontWeight: 600 }}>
+                  ✓ Salvo permanentemente na sua adega!
+                </span>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* ── BLOCO 3: PERFIL GUSTATIVO + AROMAS (VISÃO TÉCNICA) ── */}
       <div className="grid grid-cols-1 lg:grid-cols-12 items-stretch" style={{ gap: 'var(--space-5)' }}>
 
         <div className="lg:col-span-7 w-full">
@@ -200,7 +501,7 @@ export default function WineDetails({ wine, onBack, onSaveCellar, isSaved }) {
         </div>
       </div>
 
-      {/* ── BLOCO 3: HARMONIZAÇÃO ── */}
+      {/* ── BLOCO 4: HARMONIZAÇÃO ── */}
       <div className="glass-card overflow-hidden w-full" style={{ padding: 'clamp(1.25rem, 3vw, 2rem)', display: 'flex', flexDirection: 'column', gap: 'var(--space-5)', background: '#FFFFFF' }}>
         <div className="flex items-center" style={{ gap: 'var(--space-3)', paddingBottom: 'var(--space-4)', borderBottom: '1px solid var(--border-clean)' }}>
           <div className="flex items-center justify-center"
@@ -242,7 +543,7 @@ export default function WineDetails({ wine, onBack, onSaveCellar, isSaved }) {
         </div>
       </div>
 
-      {/* ── BLOCO 4: SOMMELIER ── */}
+      {/* ── BLOCO 5: PARECER DO SOMMELIER ── */}
       {wine.sommelierNote && (
         <div className="glass-card flex flex-col sm:flex-row items-start overflow-hidden w-full" style={{ padding: 'clamp(1.25rem, 3vw, 2rem)', gap: 'var(--space-4)', background: '#FDF8EB', border: '1px solid rgba(184,141,34,0.3)' }}>
           <div className="flex items-center justify-center" style={{ width: 'clamp(2.25rem,3.5vw,2.75rem)', height: 'clamp(2.25rem,3.5vw,2.75rem)', borderRadius: 'var(--radius-lg)', background: '#FFFFFF', border: '1px solid rgba(184,141,34,0.3)', flexShrink: 0, boxShadow: '0 2px 8px rgba(184,141,34,0.15)' }}>
@@ -250,7 +551,7 @@ export default function WineDetails({ wine, onBack, onSaveCellar, isSaved }) {
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)', flex: 1 }}>
             <h4 style={{ fontSize: 'var(--text-xs)', textTransform: 'uppercase', letterSpacing: '0.12em', fontWeight: 700, color: 'var(--gold-accent)' }}>
-              Parecer do Master Sommelier
+              Parecer Técnico do Master Sommelier
             </h4>
             <p style={{ fontFamily: 'var(--font-heading)', fontSize: 'var(--text-base)', color: '#4A0E1A', fontStyle: 'italic', lineHeight: 1.8 }}>
               "{wine.sommelierNote}"

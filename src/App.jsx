@@ -15,7 +15,7 @@ import { scanWineLabel } from './utils/aiScanner';
 // ── App interno (usa os hooks de auth e adega) ─────────────────────────
 function AppInner() {
   const { user, profile, loading: authLoading } = useAuth();
-  const { cellarWines, toggleWine, removeWine, isInCellar } = useCellar();
+  const { cellarWines, toggleWine, removeWine, isInCellar, updateWineReview } = useCellar();
 
   const [activeTab, setActiveTab]       = useState('scanner');
   const [scannedWine, setScannedWine]   = useState(null);
@@ -59,6 +59,10 @@ function AppInner() {
     setActiveTab('details');
   };
 
+  const activeWine = scannedWine
+    ? (cellarWines.find(w => w.id === scannedWine.id) || scannedWine)
+    : null;
+
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: 'var(--bg-canvas)', color: 'var(--text-main)', overflowX: 'hidden' }}>
       <Navbar activeTab={activeTab} setActiveTab={setActiveTab} cellarCount={cellarWines.length} />
@@ -67,12 +71,16 @@ function AppInner() {
         {activeTab === 'scanner' && (
           <Scanner onScanStart={handleStartScan} isScanning={isScanning} scanProgress={scanProgress} />
         )}
-        {activeTab === 'details' && scannedWine && (
+        {activeTab === 'details' && activeWine && (
           <WineDetails
-            wine={scannedWine}
+            wine={activeWine}
             onBack={() => setActiveTab('scanner')}
             onSaveCellar={toggleWine}
-            isSaved={isInCellar(scannedWine.id)}
+            onUpdateReview={async (targetWine, reviewData) => {
+              const updated = await updateWineReview(targetWine, reviewData);
+              if (updated) setScannedWine(updated);
+            }}
+            isSaved={isInCellar(activeWine.id)}
           />
         )}
         {activeTab === 'cellar' && (

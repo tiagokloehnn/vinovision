@@ -103,7 +103,71 @@ export function useCellar() {
     else       await addWine(wine);
   };
 
+  // ── Atualizar avaliação pessoal do vinho ──────────────────────────────
+  const updateWineReview = async (wineOrId, reviewData) => {
+    if (!user) return;
+
+    const wineId = typeof wineOrId === 'string' ? wineOrId : wineOrId.id;
+    let target = cellarWines.find(w => w.id === wineId);
+
+    // Se o vinho ainda não estiver salvo na adega, adiciona primeiro
+    if (!target && typeof wineOrId === 'object') {
+      const initialWine = {
+        ...wineOrId,
+        userRating: reviewData.userRating || 0,
+        userReview: reviewData.userReview || '',
+        userOccasion: reviewData.userOccasion || '',
+        userReviewedAt: new Date().toISOString()
+      };
+
+      setCellarWines(prev => [initialWine, ...prev]);
+
+      const { data, error } = await supabase
+        .from('cellar')
+        .insert({ user_id: user.id, wine_id: wineId, wine_data: initialWine })
+        .select()
+        .single();
+
+      if (error) {
+        console.error('[Adega] Erro ao salvar avaliação:', error.message);
+        setCellarWines(prev => prev.filter(w => w.id !== wineId));
+        throw error;
+      } else {
+        const fullWine = { ...initialWine, _rowId: data.id };
+        setCellarWines(prev => prev.map(w => (w.id === wineId ? fullWine : w)));
+        return fullWine;
+      }
+    }
+
+    if (!target) return;
+
+    const updatedWine = {
+      ...target,
+      userRating: reviewData.userRating !== undefined ? reviewData.userRating : target.userRating,
+      userReview: reviewData.userReview !== undefined ? reviewData.userReview : target.userReview,
+      userOccasion: reviewData.userOccasion !== undefined ? reviewData.userOccasion : target.userOccasion,
+      userReviewedAt: new Date().toISOString()
+    };
+
+    // Atualização otimista no estado local
+    setCellarWines(prev => prev.map(w => (w.id === wineId ? updatedWine : w)));
+
+    const { error } = await supabase
+      .from('cellar')
+      .update({ wine_data: updatedWine })
+      .eq('id', target._rowId);
+
+    if (error) {
+      console.error('[Adega] Erro ao atualizar avaliação:', error.message);
+      // Reverte em caso de erro
+      setCellarWines(prev => prev.map(w => (w.id === wineId ? target : w)));
+      throw error;
+    }
+
+    return updatedWine;
+  };
+
   const isInCellar = (wineId) => cellarWines.some(w => w.id === wineId);
 
-  return { cellarWines, loading, addWine, removeWine, toggleWine, isInCellar };
+  return { cellarWines, loading, addWine, removeWine, toggleWine, isInCellar, updateWineReview };
 }
