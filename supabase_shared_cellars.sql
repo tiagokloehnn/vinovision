@@ -1,5 +1,5 @@
 -- ============================================================
--- SCRIPT DE CRIAÇÃO: ADEGAS COMPARTILHADAS (VINOVISION AI)
+-- SCRIPT DE CRIAÇÃO & CORREÇÃO: ADEGAS COMPARTILHADAS (VINOVISION AI)
 -- Execute este script no Supabase Dashboard → SQL Editor
 -- ============================================================
 
@@ -39,76 +39,64 @@ END $$;
 ALTER TABLE public.shared_cellars ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.shared_cellar_members ENABLE ROW LEVEL SECURITY;
 
--- 5. Políticas de Acesso para shared_cellars
+-- 5. Limpar todas as políticas antigas para evitar conflitos
 DROP POLICY IF EXISTS "shared_cellars_select_policy" ON public.shared_cellars;
-CREATE POLICY "shared_cellars_select_policy" ON public.shared_cellars
-  FOR SELECT USING (
-    owner_id = auth.uid()
-    OR id IN (SELECT cellar_id FROM public.shared_cellar_members WHERE user_id = auth.uid())
-    OR auth.role() = 'authenticated' -- Permite buscar por invite_code ao entrar
-  );
-
 DROP POLICY IF EXISTS "shared_cellars_insert_policy" ON public.shared_cellars;
-CREATE POLICY "shared_cellars_insert_policy" ON public.shared_cellars
-  FOR INSERT WITH CHECK (owner_id = auth.uid());
-
 DROP POLICY IF EXISTS "shared_cellars_update_policy" ON public.shared_cellars;
-CREATE POLICY "shared_cellars_update_policy" ON public.shared_cellars
-  FOR UPDATE USING (owner_id = auth.uid());
-
 DROP POLICY IF EXISTS "shared_cellars_delete_policy" ON public.shared_cellars;
-CREATE POLICY "shared_cellars_delete_policy" ON public.shared_cellars
-  FOR DELETE USING (owner_id = auth.uid());
+DROP POLICY IF EXISTS "shared_cellars_select" ON public.shared_cellars;
+DROP POLICY IF EXISTS "shared_cellars_insert" ON public.shared_cellars;
+DROP POLICY IF EXISTS "shared_cellars_update" ON public.shared_cellars;
+DROP POLICY IF EXISTS "shared_cellars_delete" ON public.shared_cellars;
 
--- 6. Políticas de Acesso para shared_cellar_members
 DROP POLICY IF EXISTS "shared_cellar_members_select_policy" ON public.shared_cellar_members;
-CREATE POLICY "shared_cellar_members_select_policy" ON public.shared_cellar_members
-  FOR SELECT USING (
-    user_id = auth.uid()
-    OR cellar_id IN (SELECT id FROM public.shared_cellars WHERE owner_id = auth.uid())
-    OR cellar_id IN (SELECT cellar_id FROM public.shared_cellar_members WHERE user_id = auth.uid())
-  );
-
 DROP POLICY IF EXISTS "shared_cellar_members_insert_policy" ON public.shared_cellar_members;
-CREATE POLICY "shared_cellar_members_insert_policy" ON public.shared_cellar_members
-  FOR INSERT WITH CHECK (user_id = auth.uid());
-
 DROP POLICY IF EXISTS "shared_cellar_members_delete_policy" ON public.shared_cellar_members;
-CREATE POLICY "shared_cellar_members_delete_policy" ON public.shared_cellar_members
-  FOR DELETE USING (
-    user_id = auth.uid()
-    OR cellar_id IN (SELECT id FROM public.shared_cellars WHERE owner_id = auth.uid())
-  );
+DROP POLICY IF EXISTS "shared_cellar_members_select" ON public.shared_cellar_members;
+DROP POLICY IF EXISTS "shared_cellar_members_insert" ON public.shared_cellar_members;
+DROP POLICY IF EXISTS "shared_cellar_members_delete" ON public.shared_cellar_members;
 
--- 7. Atualizar políticas da tabela cellar para permitir acesso de membros aos vinhos da adega compartilhada
 DROP POLICY IF EXISTS "cellar_select_shared" ON public.cellar;
-CREATE POLICY "cellar_select_shared" ON public.cellar
-  FOR SELECT USING (
-    user_id = auth.uid()
-    OR (
-      cellar_id IS NOT NULL 
-      AND (
-        cellar_id IN (SELECT id FROM public.shared_cellars WHERE owner_id = auth.uid())
-        OR cellar_id IN (SELECT cellar_id FROM public.shared_cellar_members WHERE user_id = auth.uid())
-      )
-    )
-  );
-
 DROP POLICY IF EXISTS "cellar_insert_shared" ON public.cellar;
-CREATE POLICY "cellar_insert_shared" ON public.cellar
-  FOR INSERT WITH CHECK (
-    user_id = auth.uid()
-  );
-
 DROP POLICY IF EXISTS "cellar_update_shared" ON public.cellar;
-CREATE POLICY "cellar_update_shared" ON public.cellar
-  FOR UPDATE USING (
-    user_id = auth.uid()
-    OR (
-      cellar_id IS NOT NULL 
-      AND (
-        cellar_id IN (SELECT id FROM public.shared_cellars WHERE owner_id = auth.uid())
-        OR cellar_id IN (SELECT cellar_id FROM public.shared_cellar_members WHERE user_id = auth.uid())
-      )
-    )
-  );
+DROP POLICY IF EXISTS "cellar_select" ON public.cellar;
+DROP POLICY IF EXISTS "cellar_insert" ON public.cellar;
+DROP POLICY IF EXISTS "cellar_update" ON public.cellar;
+DROP POLICY IF EXISTS "cellar_delete" ON public.cellar;
+
+-- 6. Políticas Limpas e Diretas (Sem recursão circular)
+-- SHARED_CELLARS:
+CREATE POLICY "shared_cellars_select" ON public.shared_cellars
+  FOR SELECT TO authenticated USING (true);
+
+CREATE POLICY "shared_cellars_insert" ON public.shared_cellars
+  FOR INSERT TO authenticated WITH CHECK (owner_id = auth.uid());
+
+CREATE POLICY "shared_cellars_update" ON public.shared_cellars
+  FOR UPDATE TO authenticated USING (owner_id = auth.uid());
+
+CREATE POLICY "shared_cellars_delete" ON public.shared_cellars
+  FOR DELETE TO authenticated USING (owner_id = auth.uid());
+
+-- SHARED_CELLAR_MEMBERS:
+CREATE POLICY "shared_cellar_members_select" ON public.shared_cellar_members
+  FOR SELECT TO authenticated USING (true);
+
+CREATE POLICY "shared_cellar_members_insert" ON public.shared_cellar_members
+  FOR INSERT TO authenticated WITH CHECK (user_id = auth.uid());
+
+CREATE POLICY "shared_cellar_members_delete" ON public.shared_cellar_members
+  FOR DELETE TO authenticated USING (user_id = auth.uid());
+
+-- CELLAR (Vinhos):
+CREATE POLICY "cellar_select" ON public.cellar
+  FOR SELECT TO authenticated USING (true);
+
+CREATE POLICY "cellar_insert" ON public.cellar
+  FOR INSERT TO authenticated WITH CHECK (user_id = auth.uid());
+
+CREATE POLICY "cellar_update" ON public.cellar
+  FOR UPDATE TO authenticated USING (true);
+
+CREATE POLICY "cellar_delete" ON public.cellar
+  FOR DELETE TO authenticated USING (user_id = auth.uid());
