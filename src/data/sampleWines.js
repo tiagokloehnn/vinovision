@@ -30,7 +30,7 @@ export const SAMPLE_WINES = [
       { name: 'Cereja Madura', icon: '🍒' },
       { name: 'Baunilha', icon: '🍦' },
       { name: 'Carvalho', icon: '🪵' },
-      { name: 'Violets', icon: '🌸' }
+      { name: 'Violetas', icon: '🌸' }
     ],
     foodPairings: [
       { title: 'Churrasco & Ojo de Bife', category: 'Carnes Vermelhas', icon: '🥩', description: 'Gordura e suculência do corte bovino cortam perfeitamente os taninos firmes do Malbec.' },
@@ -195,7 +195,7 @@ export const SAMPLE_WINES = [
       { name: 'Esteva & Floral', icon: '🌸' },
       { name: 'Bergamota', icon: '🍊' },
       { name: 'Frutas Silvestres', icon: '🍓' },
-      { name: 'Especiações Doces', icon: '🌾' }
+      { name: 'Especiarias Doces', icon: '🌾' }
     ],
     foodPairings: [
       { title: 'Bacalhau à Lagareiro', category: 'Tradição Portuguesa', icon: '🐟', description: 'Bacalhau assado na brasa com azeite extravirgem e batatas ao murro.' },

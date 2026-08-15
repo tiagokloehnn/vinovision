@@ -397,7 +397,7 @@ export default function AdminPage() {
           border: '1px solid rgba(184, 141, 34, 0.4)',
           color: '#8C6810',
           icon: ShieldCheck,
-          label: 'ADMIN'
+          label: 'ADMINISTRADOR'
         };
       case 'USER_PREMIUM':
         return {
@@ -405,7 +405,7 @@ export default function AdminPage() {
           border: '1px solid rgba(16, 185, 129, 0.4)',
           color: '#065F46',
           icon: Crown,
-          label: 'USER PREMIUM'
+          label: 'USUÁRIO PREMIUM'
         };
       default:
         return {
@@ -413,7 +413,7 @@ export default function AdminPage() {
           border: '1px solid var(--border-clean)',
           color: 'var(--text-muted)',
           icon: UserCheck,
-          label: 'USER COMMUM'
+          label: 'USUÁRIO COMUM'
         };
     }
   };
@@ -510,7 +510,7 @@ export default function AdminPage() {
                 <ShieldCheck style={{ width: 'var(--text-xl)', height: 'var(--text-xl)', color: 'var(--gold-accent)' }} />
               </div>
               <div>
-                <p style={{ fontSize: 'var(--text-xs)', textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 700, color: 'var(--gold-accent)' }}>Admins</p>
+                <p style={{ fontSize: 'var(--text-xs)', textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 700, color: 'var(--gold-accent)' }}>Administradores</p>
                 <h3 style={{ fontFamily: 'var(--font-heading)', fontSize: 'var(--text-2xl)', color: 'var(--text-main)', marginTop: '2px', fontWeight: 700 }}>{adminCount}</h3>
               </div>
             </div>
@@ -520,7 +520,7 @@ export default function AdminPage() {
                 <Crown style={{ width: 'var(--text-xl)', height: 'var(--text-xl)', color: '#065F46' }} />
               </div>
               <div>
-                <p style={{ fontSize: 'var(--text-xs)', textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 700, color: '#065F46' }}>User Premium</p>
+                <p style={{ fontSize: 'var(--text-xs)', textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 700, color: '#065F46' }}>Usuários Premium</p>
                 <h3 style={{ fontFamily: 'var(--font-heading)', fontSize: 'var(--text-2xl)', color: 'var(--text-main)', marginTop: '2px', fontWeight: 700 }}>{premiumCount}</h3>
               </div>
             </div>
@@ -530,7 +530,7 @@ export default function AdminPage() {
                 <UserCheck style={{ width: 'var(--text-xl)', height: 'var(--text-xl)', color: 'var(--text-muted)' }} />
               </div>
               <div>
-                <p style={{ fontSize: 'var(--text-xs)', textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 700, color: 'var(--text-muted)' }}>User Commum</p>
+                <p style={{ fontSize: 'var(--text-xs)', textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 700, color: 'var(--text-muted)' }}>Usuários Comuns</p>
                 <h3 style={{ fontFamily: 'var(--font-heading)', fontSize: 'var(--text-2xl)', color: 'var(--text-main)', marginTop: '2px', fontWeight: 700 }}>{commonCount}</h3>
               </div>
             </div>
@@ -555,9 +555,9 @@ export default function AdminPage() {
               <Filter style={{ width: 'var(--text-sm)', height: 'var(--text-sm)', color: 'var(--text-muted)' }} />
               {[
                 { id: 'ALL', label: 'Todos' },
-                { id: 'ADMIN', label: 'ADMIN' },
-                { id: 'USER_PREMIUM', label: 'USER PREMIUM' },
-                { id: 'USER_COMMON', label: 'USER COMMUM' },
+                { id: 'ADMIN', label: 'Administradores' },
+                { id: 'USER_PREMIUM', label: 'Usuários Premium' },
+                { id: 'USER_COMMON', label: 'Usuários Comuns' },
               ].map(f => {
                 const isActive = roleFilter === f.id;
                 return (
@@ -661,9 +661,9 @@ export default function AdminPage() {
                                 cursor: isUpdating ? 'wait' : 'pointer'
                               }}
                             >
-                              <option value="USER_COMMON">USER COMMUM</option>
-                              <option value="USER_PREMIUM">USER PREMIUM</option>
-                              <option value="ADMIN">ADMIN</option>
+                              <option value="USER_COMMON">Usuário Comum</option>
+                              <option value="USER_PREMIUM">Usuário Premium</option>
+                              <option value="ADMIN">Administrador</option>
                             </select>
                           </td>
 

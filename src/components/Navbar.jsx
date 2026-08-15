@@ -46,7 +46,7 @@ export default function Navbar({ activeTab, setActiveTab, cellarCount }) {
       case 'USER_PREMIUM':
         return { label: 'PREMIUM', color: '#065F46', bg: '#ECFDF5', border: 'rgba(16,185,129,0.3)', Icon: Crown };
       default:
-        return { label: 'COMMUM', color: 'var(--text-muted)', bg: 'rgba(0,0,0,0.04)', border: 'var(--border-clean)', Icon: null };
+        return { label: 'COMUM', color: 'var(--text-muted)', bg: 'rgba(0,0,0,0.04)', border: 'var(--border-clean)', Icon: null };
     }
   };
 
