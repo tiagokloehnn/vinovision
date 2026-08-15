@@ -41,30 +41,54 @@ export default function Cellar({
 
       {/* ── SELETOR MULTI-ADEGA NO TOPO ── */}
       <div
-        className="glass-card flex flex-col md:flex-row items-stretch md:items-center justify-between p-4 sm:p-5 gap-4"
+        className="glass-card"
         style={{
+          display: 'flex',
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          flexWrap: 'wrap',
+          gap: '1.25rem',
+          padding: '1.25rem 1.75rem',
           background: 'linear-gradient(135deg, #FFFFFF 0%, #FAF8F5 100%)',
           borderColor: activeCellar.isPersonal ? 'var(--border-clean)' : 'rgba(184, 141, 34, 0.4)',
-          borderRadius: 'var(--radius-xl)'
+          borderRadius: '20px',
+          minHeight: '86px',
+          boxSizing: 'border-box'
         }}
       >
         {/* Dropdown de Adegas */}
-        <div className="relative">
+        <div style={{ position: 'relative' }}>
           <button
+            type="button"
             onClick={() => setShowCellarDropdown(!showCellarDropdown)}
-            className="flex items-center gap-3 p-2 rounded-xl hover:bg-black/5 transition-all text-left w-full sm:w-auto"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '1rem',
+              background: 'transparent',
+              border: 'none',
+              cursor: 'pointer',
+              padding: '0.4rem 0.6rem',
+              borderRadius: '14px',
+              textAlign: 'left',
+              transition: 'all 0.2s ease'
+            }}
+            onMouseEnter={e => e.currentTarget.style.background = 'rgba(0,0,0,0.03)'}
+            onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
           >
             <div
               style={{
-                width: '44px',
-                height: '44px',
-                borderRadius: '12px',
+                width: '46px',
+                height: '46px',
+                borderRadius: '14px',
                 background: activeCellar.isPersonal ? '#FDF2F4' : '#FDF8EB',
-                border: activeCellar.isPersonal ? '1px solid rgba(114,27,41,0.2)' : '1px solid rgba(184,141,34,0.3)',
+                border: activeCellar.isPersonal ? '1.5px solid rgba(114,27,41,0.2)' : '1.5px solid rgba(184,141,34,0.35)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                flexShrink: 0
+                flexShrink: 0,
+                boxShadow: '0 2px 8px rgba(0,0,0,0.04)'
               }}
             >
               {activeCellar.isPersonal ? (
@@ -74,14 +98,14 @@ export default function Cellar({
               )}
             </div>
 
-            <div style={{ minWidth: 0 }}>
-              <div className="flex items-center gap-2">
-                <span style={{ fontSize: '0.725rem', textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 700, color: 'var(--gold-accent)' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', minWidth: 0 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <span style={{ fontSize: '0.725rem', textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 800, color: 'var(--gold-accent)', lineHeight: 1.1, display: 'block' }}>
                   {activeCellar.isPersonal ? 'Adega Pessoal' : 'Adega Compartilhada'}
                 </span>
                 <ChevronDown style={{ width: '14px', height: '14px', color: 'var(--text-muted)' }} />
               </div>
-              <h3 style={{ fontFamily: 'var(--font-heading)', fontSize: 'clamp(1.1rem, 3vw, 1.35rem)', color: 'var(--text-main)', fontWeight: 700, lineHeight: 1.3, marginTop: '2px' }}>
+              <h3 style={{ fontFamily: 'var(--font-heading)', fontSize: 'clamp(1.15rem, 3.5vw, 1.45rem)', color: 'var(--text-main)', fontWeight: 800, lineHeight: 1.3, margin: 0 }}>
                 {activeCellar.name}
               </h3>
             </div>
@@ -90,45 +114,87 @@ export default function Cellar({
           {/* Menu Dropdown Flutuante */}
           {showCellarDropdown && (
             <div
-              className="absolute left-0 top-full mt-2 w-80 max-w-[90vw] bg-white rounded-xl shadow-2xl border border-black/10 z-40 p-2 animate-fadeIn flex flex-col gap-1"
+              style={{
+                position: 'absolute',
+                left: 0,
+                top: 'calc(100% + 8px)',
+                width: '20rem',
+                maxWidth: '90vw',
+                background: '#FFFFFF',
+                borderRadius: '16px',
+                boxShadow: '0 15px 35px rgba(0,0,0,0.15)',
+                border: '1px solid var(--border-clean)',
+                zIndex: 50,
+                padding: '0.5rem',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '4px'
+              }}
               onMouseLeave={() => setShowCellarDropdown(false)}
             >
-              <span style={{ fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 700, color: 'var(--text-muted)', padding: '6px 10px' }}>
+              <span style={{ fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 800, color: 'var(--text-muted)', padding: '6px 12px' }}>
                 Suas Adegas Cadastradas
               </span>
 
               {cellarsList.map(c => (
                 <button
                   key={c.id}
+                  type="button"
                   onClick={() => {
                     if (onSelectCellar) onSelectCellar(c.id);
                     setShowCellarDropdown(false);
                   }}
-                  className="flex items-center justify-between p-3 rounded-lg hover:bg-[#FAF8F5] transition-colors text-left"
                   style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    padding: '10px 12px',
+                    borderRadius: '10px',
                     background: c.id === activeCellar.id ? '#FDF8EB' : 'transparent',
                     border: 'none',
-                    cursor: 'pointer'
+                    cursor: 'pointer',
+                    transition: 'background 0.2s',
+                    textAlign: 'left'
+                  }}
+                  onMouseEnter={e => {
+                    if (c.id !== activeCellar.id) e.currentTarget.style.background = '#FAF8F5';
+                  }}
+                  onMouseLeave={e => {
+                    if (c.id !== activeCellar.id) e.currentTarget.style.background = 'transparent';
                   }}
                 >
-                  <div className="flex items-center gap-2">
-                    {c.isPersonal ? <Wine style={{ width: '15px', height: '15px', color: 'var(--wine-primary)' }} /> : <Users style={{ width: '15px', height: '15px', color: 'var(--gold-accent)' }} />}
-                    <span style={{ fontSize: '0.875rem', fontWeight: c.id === activeCellar.id ? 700 : 500, color: 'var(--text-main)' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    {c.isPersonal ? <Wine style={{ width: '16px', height: '16px', color: 'var(--wine-primary)' }} /> : <Users style={{ width: '16px', height: '16px', color: 'var(--gold-accent)' }} />}
+                    <span style={{ fontSize: '0.875rem', fontWeight: c.id === activeCellar.id ? 800 : 500, color: 'var(--text-main)' }}>
                       {c.name}
                     </span>
                   </div>
-                  {c.id === activeCellar.id && <span style={{ fontSize: '0.75rem', color: 'var(--gold-accent)', fontWeight: 700 }}>✓</span>}
+                  {c.id === activeCellar.id && <span style={{ fontSize: '0.75rem', color: 'var(--gold-accent)', fontWeight: 800 }}>✓</span>}
                 </button>
               ))}
 
-              <div className="pt-2 border-t border-black/5 mt-1">
+              <div style={{ paddingTop: '6px', borderTop: '1px solid var(--border-clean)', marginTop: '4px' }}>
                 <button
+                  type="button"
                   onClick={() => {
                     setShowCellarDropdown(false);
                     if (onOpenSharedModal) onOpenSharedModal();
                   }}
-                  className="w-full text-left p-2 rounded-lg hover:bg-[#FAF8F5] text-xs font-bold text-wine-primary flex items-center gap-2"
-                  style={{ border: 'none', cursor: 'pointer', color: 'var(--wine-primary)' }}
+                  style={{
+                    width: '100%',
+                    textAlign: 'left',
+                    padding: '8px 12px',
+                    borderRadius: '8px',
+                    fontSize: '0.8rem',
+                    fontWeight: 700,
+                    color: 'var(--wine-primary)',
+                    background: 'transparent',
+                    border: 'none',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px'
+                  }}
                 >
                   <Plus style={{ width: '15px', height: '15px' }} />
                   Gerenciar / Criar / Entrar em Adega…
@@ -139,12 +205,13 @@ export default function Cellar({
         </div>
 
         {/* Botões de Ação do Header (Empilhamento flexível e responsivo) */}
-        <div className="flex items-center flex-wrap gap-2">
+        <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '0.625rem' }}>
           {!activeCellar.isPersonal && (
             <button
+              type="button"
               onClick={onOpenSharedModal}
               className="btn-ghost"
-              style={{ fontSize: '0.8rem', padding: '8px 12px', background: '#FFFFFF', border: '1px solid var(--border-clean)', gap: '6px' }}
+              style={{ fontSize: '0.825rem', padding: '9px 15px', background: '#FFFFFF', border: '1px solid var(--border-clean)', gap: '6px' }}
             >
               <Key style={{ width: '14px', height: '14px', color: 'var(--gold-accent)' }} />
               Código: <strong>{activeCellar.invite_code || 'VINO-XXXX'}</strong>
@@ -152,16 +219,22 @@ export default function Cellar({
           )}
 
           <button
+            type="button"
             onClick={onOpenSharedModal}
             className="btn-ghost"
-            style={{ fontSize: '0.8rem', padding: '8px 14px', gap: '6px' }}
+            style={{ fontSize: '0.825rem', padding: '9px 16px', gap: '8px' }}
           >
-            <Users style={{ width: '15px', height: '15px' }} />
+            <Users style={{ width: '16px', height: '16px' }} />
             {activeCellar.isPersonal ? 'Confrarias & Grupos' : 'Gerenciar Membros'}
           </button>
 
-          <button onClick={onScanNew} className="btn-gold" style={{ fontSize: '0.85rem', padding: '8px 16px', gap: '6px' }}>
-            <Plus style={{ width: '16px', height: '16px' }} />
+          <button
+            type="button"
+            onClick={onScanNew}
+            className="btn-gold"
+            style={{ fontSize: '0.875rem', padding: '9px 18px', gap: '8px' }}
+          >
+            <Plus style={{ width: '17px', height: '17px' }} />
             Adicionar Vinho
           </button>
         </div>
