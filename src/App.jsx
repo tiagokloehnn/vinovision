@@ -44,6 +44,15 @@ function AppInner() {
   const [scanError, setScanError]             = useState(null);
   const [isSharedModalOpen, setIsSharedModalOpen] = useState(false);
 
+  // Lê atalhos rápidos do PWA (ex: ?tab=cellar ou ?tab=scanner)
+  React.useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const tabParam = params.get('tab');
+    if (tabParam && ['scanner', 'cellar', 'admin'].includes(tabParam)) {
+      setActiveTab(tabParam);
+    }
+  }, []);
+
   // Enquanto carrega a sessão, mostra um loader clean e elegante
   if (authLoading) {
     return (
